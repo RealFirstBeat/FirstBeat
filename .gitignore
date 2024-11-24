@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### spotify 변수
+.env
