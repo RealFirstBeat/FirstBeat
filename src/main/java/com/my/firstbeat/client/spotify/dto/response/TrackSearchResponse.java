@@ -1,4 +1,4 @@
-package com.my.spotify.client.spotify.dto;
+package com.my.firstbeat.client.spotify.dto.response;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class SearchRespDto {
+public class TrackSearchResponse {
 
     private Integer limit;
     private String next;
@@ -25,7 +25,7 @@ public class SearchRespDto {
     private List<TestTrackRespDto> tracks;
 
 
-    public SearchRespDto(Paging<Track> trackPage) {
+    public TrackSearchResponse(Paging<Track> trackPage) {
         limit = trackPage.getLimit();
         next = trackPage.getNext();
         previous = trackPage.getPrevious();
