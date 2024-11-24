@@ -5,7 +5,7 @@ import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 
 import java.io.IOException;
 
-//스포티파이 api 호출 관리
+//스포티파이 api 호출 오류 관리
 @FunctionalInterface
 public interface SpotifyApiCall<T>{
     T execute() throws IOException, ParseException, SpotifyWebApiException;
