@@ -1,0 +1,36 @@
+jwt:
+  secret:
+    key: d348641f16ebb1db9b17382a4694fa59476d764a9914337d7cc6beeeae858a475ed6cfabbfe4551fe8b13e1b8d305bff74dff399d52632a9f8aff1bef393ffc1023af9a97b4b2afea2d12001fe34358b1dbc6e7670a5d93fb04fc1c0a328faa153c016a129443583ca4b67181b3102ed9a6ec626a0de37f8060babf1aa0b37c5371d77b054fab9b595e1289576986b998cb479ed6096aa90e4d12cbcd900732ad27224c920da4d451e2e34b3c9224afc0176cfb704ab4044b6a72720ae3c0d604fe2b25831f5962367629006cb6b3564b3354c185239adeeca856dbb4e88aadfdbba30096bc5ebc1bb7ac9765707b7c482cf7e3544dbeea2eb72d13b8360f9d0
+
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: utf-8
+      force: true
+spring:
+  datasource:
+    url: jdbc:h2:mem:test;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      '[hibernate.default_batch_fetch_size]': 100
+      '[hibernate.format_sql]': true
+    show-sql: true
+  output:
+    ansi:
+      enabled: always
+
+
+logging:
+  level:
+    org.hibernate.orm.jdbc.bind: TRACE
+    com.my.firstbeat: DEBUG
