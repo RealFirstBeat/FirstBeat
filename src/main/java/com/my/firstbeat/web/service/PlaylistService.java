@@ -1,6 +1,5 @@
 package com.my.firstbeat.web.service;
 
-import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
@@ -22,12 +21,8 @@ public class PlaylistService {
     private final PlaylistRepository playlistRepository;
 
     @Transactional
-    public PlaylistCreateResponse createPlaylist(LoginUser loginUser, PlaylistCreateRequest request) {
-        if (request.getTitle() == null || request.getTitle().isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
+    public PlaylistCreateResponse createPlaylist(User user, PlaylistCreateRequest request) {
 
-        User user = loginUser.getUser();
         if (playlistRepository.existsByUserAndTitle(user, request.getTitle())) {
             throw new BusinessException(ErrorCode.DUPLICATE_PLAYLIST_TITLE);
         }

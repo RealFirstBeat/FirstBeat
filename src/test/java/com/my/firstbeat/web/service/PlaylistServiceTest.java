@@ -1,6 +1,5 @@
 package com.my.firstbeat.web.service;
 
-import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
@@ -40,23 +39,13 @@ class PlaylistServiceTest extends DummyObject {
         PlaylistCreateRequest request = new PlaylistCreateRequest("Test Playlist", "Test Description");
 
         // When
-        PlaylistCreateResponse response = playlistService.createPlaylist(new LoginUser(mockUser), request);
+        PlaylistCreateResponse response = playlistService.createPlaylist(mockUser, request);
 
         // Then
         assertNotNull(response);
         assertEquals("Test Playlist", response.getTitle());
         assertEquals("Test Description", response.getDescription());
         verify(playlistRepository).save(any(Playlist.class));
-    }
-
-    @Test
-    @DisplayName("플레이리스트 생성 실패: 필수 값 누락")
-    void createPlaylist_missingFields() {
-        // Given
-        PlaylistCreateRequest request = new PlaylistCreateRequest("", "");
-
-        // When & Then
-        assertThrows(BusinessException.class, () -> playlistService.createPlaylist(new LoginUser(mockUser()), request));
     }
 
     @Test
@@ -70,7 +59,7 @@ class PlaylistServiceTest extends DummyObject {
         PlaylistCreateRequest request = new PlaylistCreateRequest("Duplicate Title", "New Description");
 
         // When & Then
-        assertThrows(BusinessException.class, () -> playlistService.createPlaylist(new LoginUser(mockUser), request));
+        assertThrows(BusinessException.class, () -> playlistService.createPlaylist(mockUser, request));
     }
 
 
