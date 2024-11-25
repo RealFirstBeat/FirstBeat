@@ -35,10 +35,12 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NotFoundUser));
 
         List<UserGenre> userGenres = userGenreRepository.findByUserId(userId);
+        // 관심 장르 조회
         List<String> genres = userGenres.stream()
                 .map(userGenre -> userGenre.getGenre().getName())
                 .collect(Collectors.toList());
 
+        log.info("유저명: {}, 이메일: {}, 관심장르: {}", user.getName(), user.getEmail(), genres);
         return new MyPageResponse(user.getName(), user.getEmail(), genres);
     }
 }
