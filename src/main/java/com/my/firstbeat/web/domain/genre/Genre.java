@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -18,4 +19,8 @@ public class Genre extends BaseEntity {
     private Long id;
 
     private String name; // TODO: 우선 spotify에서 제공하는 전체 장르들을 저장하는 것도 괜찮을듯 합니다
+
+    public Genre(String name) {
+        this.name = name;
+    }
 }
