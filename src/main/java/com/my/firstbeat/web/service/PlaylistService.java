@@ -39,6 +39,7 @@ public class PlaylistService {
         );
 
         Playlist savedPlaylist = playlistRepository.save(playlist);
+        log.debug("Saved playlist: {}", savedPlaylist);
 
         return new PlaylistCreateResponse(savedPlaylist.getId(), savedPlaylist.getTitle(), savedPlaylist.getDescription());
     }
