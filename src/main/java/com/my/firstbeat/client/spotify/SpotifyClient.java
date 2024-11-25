@@ -4,10 +4,14 @@ import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
 import com.my.firstbeat.client.spotify.ex.SpotifyApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hc.core5.http.ParseException;
 import org.springframework.stereotype.Service;
 import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.specification.Paging;
 import se.michaelthelin.spotify.model_objects.specification.Track;
+
+import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
@@ -46,7 +50,7 @@ public class SpotifyClient {
         try {
             spotifyApi.setAccessToken(spotifyTokenManager.getValidToken());
             return apiCall.execute();
-        } catch (Exception e){
+        } catch (IOException | ParseException | SpotifyWebApiException e){
             log.error("Spotify API 호출 실패: {}", e.getMessage(), e);
             throw new SpotifyApiException(e);
         }

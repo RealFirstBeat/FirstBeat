@@ -22,7 +22,7 @@ public class GenreController {
     private final TrackService trackService;
     private final GenreService genreService;
 
-    @GetMapping("/auth/search/tracks") //임시 api
+    @GetMapping("/api/v1/search/tracks")
     public ResponseEntity<ApiResult<TrackSearchResponse>> searchTrackList(@RequestParam(value = "genre", required = true) String genre,
                                                                           @RequestParam(value = "page", required = false, defaultValue = "0") @PositiveOrZero Long page,
                                                                           @RequestParam(value = "limit", required = false, defaultValue = "20") @Positive Long limit){
