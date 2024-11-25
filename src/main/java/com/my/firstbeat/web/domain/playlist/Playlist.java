@@ -4,17 +4,17 @@ import com.my.firstbeat.web.domain.base.BaseEntity;
 import com.my.firstbeat.web.domain.user.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.security.ProtectionDomain;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Playlist extends BaseEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -26,7 +26,7 @@ public class Playlist extends BaseEntity {
 
     @Column(length = 256)
     private String description;
-
+  
     @Column(nullable = false)
     private boolean isDefault; //디폴트 여부 추가
 
@@ -41,4 +41,12 @@ public class Playlist extends BaseEntity {
     public void updateDefault(boolean isDefault) {
         this.isDefault = isDefault;
     }
+  
+    @Builder
+    public Playlist(String title, String description, User user) {
+        this.title = title;
+        this.description = description;
+        this.user = user;
+    }
+
 }

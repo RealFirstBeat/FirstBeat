@@ -1,11 +1,15 @@
 package com.my.firstbeat.web.service;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
+import com.my.firstbeat.web.ex.BusinessException;
+import com.my.firstbeat.web.ex.ErrorCode;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,8 +18,28 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 @Slf4j
 public class PlaylistService {
-	private final PlaylistRepository playlistRepository;
-	private final UserRepository userRepository;
+
+    private final PlaylistRepository playlistRepository;
+  	private final UserRepository userRepository;
+
+    @Transactional
+    public PlaylistCreateResponse createPlaylist(User user, PlaylistCreateRequest request) {
+
+        if (playlistRepository.existsByUserAndTitle(user, request.getTitle())) {
+            throw new BusinessException(ErrorCode.DUPLICATE_PLAYLIST_TITLE);
+        }
+
+        Playlist playlist = new Playlist(
+                request.getTitle(),
+                request.getDescription(),
+                user
+        );
+
+        Playlist savedPlaylist = playlistRepository.save(playlist);
+        log.debug("Saved playlist: {}", savedPlaylist);
+
+        return new PlaylistCreateResponse(savedPlaylist.getId(), savedPlaylist.getTitle(), savedPlaylist.getDescription());
+    }
 
 	// 디폴트 플레이리스트 가져오기 또는 생성
 	public Playlist getOrCreateDefaultPlaylist(Long userId) {
