@@ -19,10 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
@@ -101,10 +98,13 @@ public class TrackService {
         RecommendationResponse recommendations = spotifyClient.getRecommendations(seedTracks, seedGenres, RECOMMENDATIONS_SIZE);
 
         //추천 트랙 리스트 추가
-        Queue<TrackRecommendationResponse> userRecommendations = userRecommendationsCache.get(user.getId());
+        Queue<TrackRecommendationResponse> userRecommendations = userRecommendationsCache.computeIfAbsent(
+                user.getId(),k -> new ConcurrentLinkedQueue<>());
+
         recommendations.getTracks()
                 .stream()
-                .map(TrackRecommendationResponse::new);
+                .map(TrackRecommendationResponse::new)
+                .forEach(userRecommendations::offer);
     }
 
     private String getSeedGenres(User user){
@@ -119,7 +119,7 @@ public class TrackService {
     }
 
     private String getSeedTracks(User user){
-        List<Track> trackList = playlistRepository.findAllTrackByUser(user);
+        List<Track> trackList = new ArrayList<>(playlistRepository.findAllTrackByUser(user));
         Collections.shuffle(trackList);
         return trackList.stream()
                 .limit(5)

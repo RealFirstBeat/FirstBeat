@@ -2,6 +2,8 @@ package com.my.firstbeat.client.spotify.dto.response;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
@@ -36,6 +38,8 @@ public class TrackSearchResponse {
     @NoArgsConstructor
     @Getter
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @AllArgsConstructor
+    @Builder
     public static class TrackResponse {
         private String trackName;
         private String id;
@@ -60,6 +64,7 @@ public class TrackSearchResponse {
         @NoArgsConstructor
         @Getter
         @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+        @AllArgsConstructor
         public static class ArtistResponse {
             private String name;
 
