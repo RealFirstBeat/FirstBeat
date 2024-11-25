@@ -26,4 +26,19 @@ public class Playlist extends BaseEntity {
 
     @Column(length = 256)
     private String description;
+
+    @Column(nullable = false)
+    private boolean isDefault; //디폴트 여부 추가
+
+    // 커스텀 생성자
+    public Playlist(User user, String title, String description, boolean isDefault) {
+        this.user = user;
+        this.title = title;
+        this.description = description;
+        this.isDefault = isDefault;
+    }
+
+    public void updateDefault(boolean isDefault) {
+        this.isDefault = isDefault;
+    }
 }
