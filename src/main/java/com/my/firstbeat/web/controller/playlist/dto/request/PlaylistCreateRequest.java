@@ -18,6 +18,6 @@ public class PlaylistCreateRequest {
     public PlaylistCreateRequest(String Title, String Description, User user) {
         this.Title = Title;
         this.Description = Description;
-        this. user = user;
+        this.user = user;
     }
 }
