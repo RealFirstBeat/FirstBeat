@@ -1,9 +1,5 @@
 package com.my.firstbeat.web.service;
 
-import com.my.firstbeat.web.config.security.loginuser.LoginUser;
-import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
-import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
-import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
