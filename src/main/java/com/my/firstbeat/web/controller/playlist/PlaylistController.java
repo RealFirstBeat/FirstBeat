@@ -1,18 +1,13 @@
 package com.my.firstbeat.web.controller.playlist;
 
-import java.nio.file.attribute.UserPrincipal;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.service.PlaylistService;
@@ -34,7 +29,6 @@ public class PlaylistController {
 		Playlist defaultPlaylist = playlistService.getOrCreateDefaultPlaylist(user.getUser().getId());
 		return ResponseEntity.ok(ApiResult.success(defaultPlaylist));
 	}
-
 
 	// 디폴트 플레이리스트 변경
 	@PutMapping("/{playlistId}/default/")

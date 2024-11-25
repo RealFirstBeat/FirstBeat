@@ -2,12 +2,10 @@ package com.my.firstbeat.web.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,10 +34,8 @@ public class PlaylistService {
 				true
 			));
 		}
-
 		return defaultPlaylist;
 	}
-
 
 	//디폴트 플레이리스트 변경 로직
 	public void changeDefaultPlaylist(Long userId, Long playlistId) {
