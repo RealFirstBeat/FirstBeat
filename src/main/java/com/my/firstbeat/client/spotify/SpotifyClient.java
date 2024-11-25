@@ -30,6 +30,17 @@ public class SpotifyClient {
         });
     }
 
+    //제공하는 장르 목록 검색
+    public String[] getGenres(){
+        return executeWithValidToken(() -> {
+            String[] genres = spotifyApi.getAvailableGenreSeeds()
+                    .build()
+                    .execute();
+            log.debug("Spotify API 호출 완료 - getGenreList, size: {}", genres.length);
+            return genres;
+        });
+    }
+
 
     private <T> T executeWithValidToken(SpotifyApiCall<T> apiCall){
         try {
