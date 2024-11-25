@@ -1,23 +1,23 @@
 package com.my.firstbeat.web.controller.playlist.dto.request;
 
-import com.my.firstbeat.web.domain.user.User;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
 public class PlaylistCreateRequest {
 
-    private String Title;
-    private String Description;
-    private User user;
+    @NotEmpty(message = "Title은 비어있을 수 없습니다.")
+    @Size(max = 30, message = "30자 내로 작성해주세요.")
+    private String title;
 
-    public PlaylistCreateRequest(String Title, String Description) {
-        this.Title = Title;
-        this.Description = Description;
-    }
+    @Size(max = 256, message = "256자 내외로 작성해주세요.")
+    private String description;
 
-    public PlaylistCreateRequest(String Title, String Description, User user) {
-        this.Title = Title;
-        this.Description = Description;
-        this.user = user;
+    public PlaylistCreateRequest(String title, String description) {
+        this.title = title;
+        this.description = description;
     }
 }
