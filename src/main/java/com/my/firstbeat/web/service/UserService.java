@@ -32,7 +32,7 @@ public class UserService {
      */
     public MyPageResponse getUserData(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NotFoundUser));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         List<UserGenre> userGenres = userGenreRepository.findByUserId(userId);
         // 관심 장르 조회
