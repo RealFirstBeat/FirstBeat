@@ -28,20 +28,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse.TrackResponse.builder;
+import static com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse.*;
+import static com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse.TrackResponse.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class TrackServiceSpringBootTest extends DummyObject {
+class RecommendationServiceTest extends DummyObject {
+
     @Autowired
-    private TrackService trackService;
+    private RecommendationService recommendationService;
 
     @MockBean
     private SpotifyClient spotifyClient;
@@ -62,18 +64,16 @@ class TrackServiceSpringBootTest extends DummyObject {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-
     @Test
-    @DisplayName("여러 스레드가 동시에 캐시 리프레시 시도할 때 중복 리프레시 발생하지 않는지 테스트")
-    void getRecommendations_with_concurrent_refresh_requests_should_cause_duplicatedRefresh() throws InterruptedException {
-
+    @DisplayName("여러 스레드가 동시에 캐시 리프레시 시도할 때 락으로 인해 중복 리프레시가 발생하지 않음")
+    void getRecommendations_with_concurrent_refresh_requests_should_not_cause_duplicatedRefresh() throws InterruptedException {
         int concurrentRequests = 50;
-        int expectedMinimumApiCalls = 3;
+        int expectedApiCalls = 3; // 3번만 호출되어야 함
 
         ExecutorService executorService = Executors.newFixedThreadPool(concurrentRequests);
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch completionLatch = new CountDownLatch(concurrentRequests);
-        AtomicInteger apiCallCount = new AtomicInteger(0); //api 호출 카운트
+        AtomicInteger apiCallCount = new AtomicInteger(0);
 
         testUser = new User(1L, "test@naver.com", Role.USER);
         given(userService.findByIdOrFail(anyLong())).willReturn(testUser);
@@ -85,43 +85,34 @@ class TrackServiceSpringBootTest extends DummyObject {
                 .willReturn(List.of(Track.builder().spotifyTrackId("test1").build(),
                         Track.builder().spotifyTrackId("test2").build()));
 
-
         given(spotifyClient.getRecommendations(anyString(), anyString(), anyInt()))
                 .willAnswer(invocation -> {
-
                     log.info("Spotify API 호출: {}", System.currentTimeMillis());
                     apiCallCount.incrementAndGet();
 
-                    Thread.sleep(100);
+                    Thread.sleep(100); // API 지연
 
                     RecommendationResponse response = new RecommendationResponse();
-
-                    List<TrackSearchResponse.TrackResponse> tracks = IntStream.range(0, 20)
+                    List<TrackResponse> tracks = IntStream.range(0, 20)
                             .mapToObj(i -> builder()
                                     .id("spotifyId: "+i)
-                                    .artists(new TrackSearchResponse.TrackResponse.ArtistResponse("nct wish"))
+                                    .artists(new ArtistResponse("nct wish"))
                                     .build())
                             .collect(Collectors.toList());
                     response.setTracks(tracks);
                     return response;
                 });
 
+        //캐시 초기화
+        recommendationService.getRecommendations(testUser.getId());
 
-        //캐시 초기화를 위해 첫 번째 호출 수행
-        trackService.getRecommendations(testUser.getId());
-        //카운트 리셋
-        apiCallCount.set(0);
-
-
-
-        //여러 스레드에서 동시에 요청
         List<Future<TrackRecommendationResponse>> futures = new ArrayList<>();
-        for(int i = 0;i<concurrentRequests; i++){
-            futures.add(executorService.submit(() ->{
+        for(int i = 0; i < concurrentRequests; i++) {
+            futures.add(executorService.submit(() -> {
                 startLatch.await();
-                try{
-                    return trackService.getRecommendations(testUser.getId());
-                }finally {
+                try {
+                    return recommendationService.getRecommendations(testUser.getId());
+                } finally {
                     completionLatch.countDown();
                 }
             }));
@@ -131,9 +122,8 @@ class TrackServiceSpringBootTest extends DummyObject {
             }
         }
 
-        startLatch.countDown(); // 동시 요청 시작
+        startLatch.countDown();
         completionLatch.await(10, TimeUnit.SECONDS);
-
 
         List<TrackRecommendationResponse> results = futures.stream()
                 .map(future -> {
@@ -147,24 +137,19 @@ class TrackServiceSpringBootTest extends DummyObject {
                 .toList();
 
         int actualApiCalls = apiCallCount.get();
-        log.info("기대한 최소 API 호출 수: {}, 실제 발생한 API 호출 수: {}", expectedMinimumApiCalls, actualApiCalls);
-
+        log.info("기대한 API 호출 수: {}, 실제 발생한 API 호출 수: {}", expectedApiCalls, actualApiCalls);
 
         assertAll(
-                () -> assertThat(results).hasSize(concurrentRequests), //모든 요청 성공
-                () -> {
-
-                    //중복 발생했는지
-                    assertThat(actualApiCalls)
-                            .as("api 호출 기대값: %d. 경쟁 상태로 인해 API 중복 호출 발생: %d ", expectedMinimumApiCalls, actualApiCalls)
-                            .isGreaterThan(expectedMinimumApiCalls)
-                            .isLessThan(concurrentRequests);
-                },
-                () -> verify(spotifyClient, atLeast(expectedMinimumApiCalls + 1))
+                () -> assertThat(results).hasSize(concurrentRequests), // 모든 요청 성공
+                () -> assertThat(actualApiCalls)
+                        .as("락 적용으로 API 호출이 최소화되어야 함. 기대값: %d, 실제: %d",
+                                expectedApiCalls, actualApiCalls)
+                        .isEqualTo(expectedApiCalls), // 정확히 3번만 호출되어야 함!!!!!!
+                () -> verify(spotifyClient, times(expectedApiCalls))
                         .getRecommendations(anyString(), anyString(), anyInt())
         );
 
-
         executorService.shutdown();
     }
+
 }

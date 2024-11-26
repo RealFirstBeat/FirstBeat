@@ -2,7 +2,6 @@ package com.my.firstbeat.web.service;
 
 import com.my.firstbeat.client.spotify.SpotifyClient;
 import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
-import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
 import com.my.firstbeat.web.domain.genre.Genre;
 import com.my.firstbeat.web.domain.genre.GenreRepository;
@@ -11,9 +10,7 @@ import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.User;
-import com.my.firstbeat.web.domain.userGenre.UserGenreRepository;
 import com.my.firstbeat.web.dummy.DummyObject;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -23,11 +20,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
-
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,7 +43,7 @@ import static org.mockito.Mockito.verify;
 class TrackServiceTest extends DummyObject {
 
     @InjectMocks
-    private TrackService trackService;
+    private RecommendationServiceWithoutLock recommendationService;
 
     @Mock
     private SpotifyClient spotifyClient;
@@ -126,7 +120,7 @@ class TrackServiceTest extends DummyObject {
                                 threadName, userId, requestId, currentRequest);
 
 
-                        TrackRecommendationResponse response = trackService.getRecommendations(testUser.getId());
+                        TrackRecommendationResponse response = recommendationService.getRecommendations(testUser.getId());
                         if (response != null) {
                             recommendedTracks.add(response.getSpotifyTrackId());
                             System.out.printf("[%s] 요청 완료 - trackId: %s (user: %d, request: %d, 전체요청: %d)%n",
@@ -212,7 +206,7 @@ class TrackServiceTest extends DummyObject {
 
 
         //캐시 초기화를 위해 첫 번째 호출 수행
-        trackService.getRecommendations(testUser.getId());
+        recommendationService.getRecommendations(testUser.getId());
         //카운트 리셋
         apiCallCount.set(0);
 
@@ -224,7 +218,7 @@ class TrackServiceTest extends DummyObject {
             futures.add(executorService.submit(() ->{
                 startLatch.await();
                 try{
-                    return trackService.getRecommendations(testUser.getId());
+                    return recommendationService.getRecommendations(testUser.getId());
                 }finally {
                     completionLatch.countDown();
                 }
