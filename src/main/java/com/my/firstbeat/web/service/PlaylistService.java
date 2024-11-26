@@ -5,11 +5,13 @@ import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateRespo
 import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
+import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -88,8 +90,13 @@ public class PlaylistService {
 	public TrackListResponse getTrackList(Long playlistId, int page, int size) {
 		Playlist playlist = findByIdOrFail(playlistId);
 		Pageable pageable = PageRequest.of(page, size);
-		trackRepository.findAllByPlaylist(playlist, pageable);
-
+		try {
+			Page<Track> trackPage = trackRepository.findAllByPlaylist(playlist, pageable);
+			return new TrackListResponse(trackPage);
+		} catch(Exception e){
+			log.error("플레이리스트 내 트랙 목록 조회 시 오류 발생: 플레이리스트 ID: {}, 원인: {}", playlistId, e.getMessage(), e);
+			throw new BusinessException(ErrorCode.TRACK_FETCH_ERROR);
+		}
 	}
 
 	public Playlist findByIdOrFail(Long playlistId){

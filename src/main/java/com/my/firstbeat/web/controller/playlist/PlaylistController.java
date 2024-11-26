@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.validator.constraints.Range;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -56,7 +57,7 @@ public class PlaylistController {
 	@GetMapping("/{playlistId}")
 	public ResponseEntity<ApiResult<TrackListResponse>> getTrackList(@PathVariable(value = "playlistId") Long playlistId,
 																	 @RequestParam(value = "page", defaultValue = "0", required = false) @PositiveOrZero int page,
-																	 @RequestParam(value = "size", defaultValue = "10", required = false) @Positive int size){
-		return ResponseEntity.of(playlistService.getTrackList(playlistId, page, size));
+																	 @RequestParam(value = "size", defaultValue = "10", required = false) @Range(min = 1, max = 100, message = "페이지 크기는 1에서 100 사이여야 합니다") int size) {
+		return ResponseEntity.ok(ApiResult.success(playlistService.getTrackList(playlistId, page, size)));
 	}
 }
