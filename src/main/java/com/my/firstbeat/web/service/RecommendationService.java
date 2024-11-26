@@ -70,6 +70,8 @@ public class RecommendationService {
             try {
                 if(needsRefresh(recommendations)) {
                     refreshRecommendations(user);
+                    //갱신 후 캐시에서 추천 리스트 다시 가져옴
+                    recommendations = recommendationsCache.get(userId, key -> new ConcurrentLinkedQueue<>());
                 }
             } finally {
                 userLock.unlock();
@@ -100,7 +102,8 @@ public class RecommendationService {
                     .stream()
                     .map(TrackRecommendationResponse::new)
                     .forEach(recommendations::offer);
-
+            // 데이터 갱신
+            recommendationsCache.put(user.getId(), recommendations);
         } catch (SpotifyApiException e){
             log.error("Spotify API 호출 실패 - 유저 ID: {}, 원인: {}", user.getId(), e.getMessage(), e);
             throw e;
@@ -156,7 +159,7 @@ public class RecommendationService {
         userLocks.keySet().removeIf(userId -> !recommendationsCache.asMap().containsKey(userId));
     }
 
-    private boolean needsRefresh(Queue<TrackRecommendationResponse> recommendations) {
+    public boolean needsRefresh(Queue<TrackRecommendationResponse> recommendations) {
         return recommendations.size() <= REFRESH_THRESHOLD;
     }
 
