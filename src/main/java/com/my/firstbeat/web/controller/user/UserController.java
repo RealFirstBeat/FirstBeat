@@ -6,6 +6,7 @@ import com.my.firstbeat.web.controller.user.dto.response.GetMyPageResponse;
 import com.my.firstbeat.web.controller.user.dto.response.UpdateMyPageResponse;
 import com.my.firstbeat.web.service.UserService;
 import com.my.firstbeat.web.util.api.ApiResult;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,9 +31,9 @@ public class UserController {
     @PatchMapping("/mypage")
     public ResponseEntity<ApiResult<UpdateMyPageResponse>> updateMyPage(
             @AuthenticationPrincipal LoginUser loginUser,
-            @RequestBody UpdateMyPageRequest request
-    ) {
-        UpdateMyPageResponse response = userService.updateMyPage(loginUser.getUser().getId(), request);
+            @RequestBody @Valid UpdateMyPageRequest request) {
+        Long userId = loginUser.getUser().getId();
+        UpdateMyPageResponse response = userService.updateMyPage(userId, request);
         return ResponseEntity.ok(ApiResult.success(response));
     }
 }
