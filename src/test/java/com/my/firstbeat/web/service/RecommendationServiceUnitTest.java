@@ -2,6 +2,7 @@ package com.my.firstbeat.web.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.my.firstbeat.client.spotify.SpotifyClient;
+import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
 import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
 import com.my.firstbeat.web.domain.genre.Genre;
@@ -21,17 +22,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse.*;
+import static com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse.TrackResponse.builder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
@@ -92,6 +96,56 @@ class RecommendationServiceUnitTest extends DummyObject {
 
         assertThat(result).isEqualTo(response);
         verify(spotifyClient, never()).getRecommendations(anyString(), anyString(), anyInt());
+    }
+
+    @Test
+    @DisplayName("추천 트랙 조회: 캐시에 데이터가 부족할 시 새로운 추천 트랙 리스트 요청")
+    void getRecommendations_refresh_when_cache_insufficient(){
+
+        Queue<TrackRecommendationResponse> emptyCache = new ConcurrentLinkedQueue<>();
+        List<Genre> genreList = Arrays.asList(
+                new Genre("k-pop"),
+                new Genre("dance")
+        );
+        List<Track> trackList = Arrays.asList(
+                Track.builder().name("Steady").spotifyTrackId("spotifyTrackId 112").build(),
+                Track.builder().name("Supercute").spotifyTrackId("spotifyTrackId 111").build()
+        );
+
+        RecommendationResponse mockRecommendation = new RecommendationResponse();
+        List<TrackResponse> tracks = IntStream.range(0, 20)
+                .mapToObj(i -> builder()
+                        .id("spotifyId: "+i)
+                        .artists(new TrackResponse.ArtistResponse("nct wish"))
+                        .build())
+                .collect(Collectors.toList());
+
+        mockRecommendation.setTracks(tracks);
+
+        given(userService.findByIdOrFail(userId)).willReturn(testUser);
+
+        //첫 번째 캐시 접근
+        given(recommendationCache.get(anyLong(), any())).willReturn(emptyCache);
+
+        //두 번째 캐시 접근
+        //given(recommendationCache.get)
+
+        given(genreRepository.findTop5GenresByUser(any(User.class), any(Pageable.class))).willReturn(genreList);
+        given(playlistRepository.findAllTrackByUser(any(User.class), any(Pageable.class))).willReturn(trackList);
+        given(spotifyClient.getRecommendations(anyString(), anyString(), anyInt()))
+                .willAnswer(invocation -> {
+                    RecommendationResponse response = new RecommendationResponse();
+                    response.setTracks(tracks);
+                    return response;
+                });
+        given(trackRepository.existsInUserPlaylist(any(User.class), anyString())).willReturn(false);
+
+
+        //when
+        TrackRecommendationResponse result = recommendationService.getRecommendations(userId);
+
+        verify(spotifyClient, times(1)).getRecommendations(anyString(), anyString(), anyInt());
+        assertThat(result).isNotNull();
     }
 
 
