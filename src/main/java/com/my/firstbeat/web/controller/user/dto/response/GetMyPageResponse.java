@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class MyPageResponse {
+public class GetMyPageResponse {
     private String name;
     private String email;
     private List<String> genres;

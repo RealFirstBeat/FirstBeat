@@ -1,6 +1,6 @@
 package com.my.firstbeat.web.service;
 
-import com.my.firstbeat.web.controller.user.dto.response.MyPageResponse;
+import com.my.firstbeat.web.controller.user.dto.response.GetMyPageResponse;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.domain.userGenre.UserGenre;
@@ -49,7 +49,7 @@ class UserServiceTest extends DummyObject {
         when(userGenreRepository.findByUserIdWithGenre(1L)).thenReturn(userGenres);
 
         // When
-        MyPageResponse response = userService.getUserData(1L);
+        GetMyPageResponse response = userService.getUserData(1L);
 
         // Then
         assertEquals("test name", response.getName());

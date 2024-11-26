@@ -1,7 +1,7 @@
 package com.my.firstbeat.web.controller.user;
 
 import com.my.firstbeat.web.config.security.loginuser.LoginUser;
-import com.my.firstbeat.web.controller.user.dto.response.MyPageResponse;
+import com.my.firstbeat.web.controller.user.dto.response.GetMyPageResponse;
 import com.my.firstbeat.web.service.UserService;
 import com.my.firstbeat.web.util.api.ApiResult;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +19,10 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/mypage")
-    public ResponseEntity<ApiResult<MyPageResponse>> getMyPage(@AuthenticationPrincipal LoginUser loginUser) {
+    public ResponseEntity<ApiResult<GetMyPageResponse>> getMyPage(@AuthenticationPrincipal LoginUser loginUser) {
         Long userId = loginUser.getUser().getId();
 
-        MyPageResponse response = userService.getUserData(userId);
+        GetMyPageResponse response = userService.getUserData(userId);
 
         return ResponseEntity.ok(ApiResult.success(response));
     }

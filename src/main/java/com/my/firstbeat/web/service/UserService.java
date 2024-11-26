@@ -1,5 +1,6 @@
 package com.my.firstbeat.web.service;
 
+import com.my.firstbeat.web.controller.user.dto.response.GetMyPageResponse;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.controller.user.dto.response.MyPageResponse;
@@ -36,7 +37,7 @@ public class UserService {
      * @return MyPageResponse
      * @exception BusinessException NotFoundUserException
      */
-    public MyPageResponse getUserData(Long userId) {
+    public GetMyPageResponse getUserData(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -47,6 +48,6 @@ public class UserService {
                 .collect(Collectors.toList());
 
         log.info("유저명: {}, 이메일: {}, 관심장르: {}", user.getName(), user.getEmail(), genres);
-        return new MyPageResponse(user.getName(), user.getEmail(), genres);
+        return new GetMyPageResponse(user.getName(), user.getEmail(), genres);
     }
 }
