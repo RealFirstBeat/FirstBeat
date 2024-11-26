@@ -18,4 +18,16 @@ public class DummyObject {
                 .role(Role.USER)
                 .build();
     }
+
+    protected User mockUserWithId(Long id) {
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
+        return User.builder()
+                .id(id)
+                .name("test name")
+                .email("test1234@naver.com")
+                .password(encoder.encode(mockUserPassword))
+                .role(Role.USER)
+                .build();
+    }
 }
