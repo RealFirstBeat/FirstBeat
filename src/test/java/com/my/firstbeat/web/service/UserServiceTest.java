@@ -85,8 +85,8 @@ class UserServiceTest extends DummyObject {
         when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
 
         UpdateMyPageRequest request = new UpdateMyPageRequest();
-        request.setName(Optional.of("updatedName"));
-        request.setFavoriteGenre(Optional.of(List.of("Jazz", "Rock")));
+        request.setName("updatedName");
+        request.setFavoriteGenre(List.of("Jazz", "Rock"));
 
         Genre jazz = Genre.builder().name("Jazz").build();
         Genre rock = Genre.builder().name("Rock").build();
