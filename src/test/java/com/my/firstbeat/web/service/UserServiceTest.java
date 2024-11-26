@@ -7,6 +7,7 @@ import com.my.firstbeat.web.domain.userGenre.UserGenre;
 import com.my.firstbeat.web.domain.userGenre.UserGenreRepository;
 import com.my.firstbeat.web.dummy.DummyObject;
 import com.my.firstbeat.web.ex.BusinessException;
+import com.my.firstbeat.web.ex.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ class UserServiceTest extends DummyObject {
         when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
 
         List<UserGenre> userGenres = mockUserGenres(mockUser);
-        when(userGenreRepository.findByUserId(1L)).thenReturn(userGenres);
+        when(userGenreRepository.findByUserIdWithGenre(1L)).thenReturn(userGenres);
 
         // When
         MyPageResponse response = userService.getUserData(1L);
@@ -63,8 +64,8 @@ class UserServiceTest extends DummyObject {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
         // When & Then
-        Exception exception = assertThrows(BusinessException.class, () -> userService.getUserData(999L));
+        BusinessException exception = assertThrows(BusinessException.class, () -> userService.getUserData(999L));
 
-        assertEquals("Access denied for user data", exception.getMessage());
+        assertEquals(ErrorCode.USER_NOT_FOUND.getMessage(), exception.getMessage());
     }
 }
