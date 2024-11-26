@@ -15,7 +15,6 @@ import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,16 +71,16 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 이름 업데이트
-        request.getName().ifPresent(user::setName);
-        userRepository.save(user);
+        if (request.getName() != null) {
+            user.setName(request.getName());
+            userRepository.save(user);
+        }
 
         // 관심 장르 업데이트
-        request.getFavoriteGenre().ifPresent(favoriteGenres -> {
-            // 기존 장르 삭제
+        if (request.getFavoriteGenre() != null && !request.getFavoriteGenre().isEmpty()) {
             userGenreRepository.deleteByUserId(userId);
 
-            // 새로운 장르 추가
-            List<Genre> genres = genreRepository.findByNameIn(favoriteGenres);
+            List<Genre> genres = genreRepository.findByNameIn(request.getFavoriteGenre());
             for (Genre genre : genres) {
                 UserGenre userGenre = UserGenre.builder()
                         .user(user)
@@ -89,7 +88,7 @@ public class UserService {
                         .build();
                 userGenreRepository.save(userGenre);
             }
-        });
+        }
 
         // 업데이트된 장르 조회
         List<UserGenre> updatedUserGenres = userGenreRepository.findByUserIdWithGenre(userId);
