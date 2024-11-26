@@ -13,6 +13,9 @@ import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.dummy.DummyObject;
+import com.my.firstbeat.web.ex.BusinessException;
+import com.my.firstbeat.web.ex.ErrorCode;
+import jakarta.persistence.SqlResultSetMapping;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -35,6 +39,7 @@ import java.util.stream.IntStream;
 import static com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse.*;
 import static com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse.TrackResponse.builder;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -194,6 +199,50 @@ class RecommendationServiceUnitTest extends DummyObject {
         TrackRecommendationResponse results = recommendationService.getRecommendations(testUser.getId());
 
         assertThat(results.getSpotifyTrackId()).isEqualTo("새 트랙 id");
+        verify(spotifyClient, times(1)).getRecommendations(anyString(), anyString(), anyInt());
+    }
+
+
+    @Test
+    @DisplayName("추천 트랙 조회: 최대 재시도 횟수(빠른 반환을 위한 초기 호출1 + 최대 횟수20) 초과 시 예외 발생")
+    void getRecommendations_should_throw_exception_when_exceeds_max_attempts(){
+
+        Queue<TrackRecommendationResponse> recommendations = new ConcurrentLinkedQueue<>();
+        for(int i = 0;i<25;i++){
+            recommendations.offer(new TrackRecommendationResponse(
+                    TrackResponse.builder()
+                            .id("spotifyId: "+i)
+                            .name("spotify name: "+i)
+                            .trackName("track: "+i)
+                            .artists(new TrackResponse.ArtistResponse("nct wish"))
+                            .build())
+            );
+        }
+        given(userService.findByIdOrFail(testUser.getId())).willReturn(testUser);
+        given(recommendationCache.get(eq(testUser.getId()), any())).willReturn(recommendations);
+        //모든 캐시된 곡이 플리에 존재
+        given(trackRepository.existsInUserPlaylist(eq(testUser), anyString())).willReturn(true);
+        given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(List.of(new Genre("k-pop")));
+        given(playlistRepository.findAllTrackByUser(any(), any())).willReturn(Collections.emptyList());
+
+        //5개가 남았을 때 spotifyApi에 새 트랙 리스트 추천 요청
+        List<TrackResponse> newTracks = IntStream.range(0, 20)
+                .mapToObj(i -> TrackResponse.builder()
+                        .id("new-track-" + i)
+                        .trackName("New Track " + i)
+                        .artists(new TrackResponse.ArtistResponse("New Artist"))
+                        .build())
+                .toList();
+        RecommendationResponse newRecommendations = new RecommendationResponse();
+        newRecommendations.setTracks(newTracks);
+        given(spotifyClient.getRecommendations(anyString(), anyString(), anyInt())).willReturn(newRecommendations);
+
+        //when
+        assertThatThrownBy(() -> recommendationService.getRecommendations(testUser.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MAX_RECOMMENDATION_ATTEMPTS_EXCEED);
+
+        verify(trackRepository, times(21)).existsInUserPlaylist(eq(testUser), anyString());
         verify(spotifyClient, times(1)).getRecommendations(anyString(), anyString(), anyInt());
     }
 
