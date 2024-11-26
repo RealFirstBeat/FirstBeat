@@ -1,6 +1,7 @@
 package com.my.firstbeat.web.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.my.firstbeat.client.spotify.SpotifyClient;
 import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
 import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
@@ -26,6 +27,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -64,12 +67,10 @@ class RecommendationServiceUnitTest extends DummyObject {
 
     private User testUser;
 
-    private Long userId;
 
     @BeforeEach
     void setUp(){
-        testUser = mockUser();
-        userId = 1L;
+        testUser = mockUserWithId();
     }
 
     @Test
@@ -87,12 +88,12 @@ class RecommendationServiceUnitTest extends DummyObject {
         Queue<TrackRecommendationResponse> recommendations = new ConcurrentLinkedQueue<>();
         recommendations.offer(response);
 
-        given(userService.findByIdOrFail(userId)).willReturn(testUser);
-        given(recommendationCache.get(eq(userId), any())).willReturn(recommendations);
+        given(userService.findByIdOrFail(testUser.getId())).willReturn(testUser);
+        given(recommendationCache.get(eq(testUser.getId()), any())).willReturn(recommendations);
         given(trackRepository.existsInUserPlaylist(testUser, response.getSpotifyTrackId())).willReturn(false);
 
         //when
-        TrackRecommendationResponse result = recommendationService.getRecommendations(userId);
+        TrackRecommendationResponse result = recommendationService.getRecommendations(testUser.getId());
 
         assertThat(result).isEqualTo(response);
         verify(spotifyClient, never()).getRecommendations(anyString(), anyString(), anyInt());
@@ -101,8 +102,6 @@ class RecommendationServiceUnitTest extends DummyObject {
     @Test
     @DisplayName("추천 트랙 조회: 캐시에 데이터가 부족할 시 새로운 추천 트랙 리스트 요청")
     void getRecommendations_refresh_when_cache_insufficient(){
-
-        Queue<TrackRecommendationResponse> emptyCache = new ConcurrentLinkedQueue<>();
         List<Genre> genreList = Arrays.asList(
                 new Genre("k-pop"),
                 new Genre("dance")
@@ -112,40 +111,57 @@ class RecommendationServiceUnitTest extends DummyObject {
                 Track.builder().name("Supercute").spotifyTrackId("spotifyTrackId 111").build()
         );
 
-        RecommendationResponse mockRecommendation = new RecommendationResponse();
         List<TrackResponse> tracks = IntStream.range(0, 20)
-                .mapToObj(i -> builder()
+                .mapToObj(i -> TrackResponse.builder()
                         .id("spotifyId: "+i)
+                        .name("spotify name: "+i)
+                        .trackName("track: "+i)
                         .artists(new TrackResponse.ArtistResponse("nct wish"))
                         .build())
                 .collect(Collectors.toList());
 
+        RecommendationResponse mockRecommendation = new RecommendationResponse();
         mockRecommendation.setTracks(tracks);
 
-        given(userService.findByIdOrFail(userId)).willReturn(testUser);
+        given(userService.findByIdOrFail(testUser.getId())).willReturn(testUser);
 
-        //첫 번째 캐시 접근
-        given(recommendationCache.get(anyLong(), any())).willReturn(emptyCache);
+        Queue<TrackRecommendationResponse> sharedQueue = new ConcurrentLinkedQueue<>();
+        given(spotifyClient.getRecommendations(anyString(), anyString(), anyInt())).willAnswer(invocation -> {
+            //spotify api 호출하면서 큐에 데이터 추가
+            tracks.stream()
+                    .map(TrackRecommendationResponse::new)
+                    .forEach(sharedQueue::offer);
+            return mockRecommendation;
+        });
 
-        //두 번째 캐시 접근
-        //given(recommendationCache.get)
 
-        given(genreRepository.findTop5GenresByUser(any(User.class), any(Pageable.class))).willReturn(genreList);
-        given(playlistRepository.findAllTrackByUser(any(User.class), any(Pageable.class))).willReturn(trackList);
-        given(spotifyClient.getRecommendations(anyString(), anyString(), anyInt()))
-                .willAnswer(invocation -> {
-                    RecommendationResponse response = new RecommendationResponse();
-                    response.setTracks(tracks);
-                    return response;
-                });
-        given(trackRepository.existsInUserPlaylist(any(User.class), anyString())).willReturn(false);
+        //처음에는 빈 큐 반환하고, 그 이후 호출에서는 데이터가 채워진 큐를 반환하도록
+        given(recommendationCache.get(eq(testUser.getId()), any())).willAnswer(invocation -> {
+            if(sharedQueue.isEmpty()){ //첫 번째 캐시 접근 시 -> 빈 데이터 이므로 빈 객체 반환
+                return new ConcurrentLinkedQueue<>();
+            }
+            return sharedQueue; //이후 두 번째 접근에서는 데이터가 있는 sharedQueue 를 반환
+        });
 
+        given(genreRepository.findTop5GenresByUser(eq(testUser), any(Pageable.class))).willReturn(genreList);
+        given(playlistRepository.findAllTrackByUser(eq(testUser), any(Pageable.class))).willReturn(trackList);
+        given(trackRepository.existsInUserPlaylist(eq(testUser), anyString())).willReturn(false);
 
         //when
-        TrackRecommendationResponse result = recommendationService.getRecommendations(userId);
+        TrackRecommendationResponse result = recommendationService.getRecommendations(testUser.getId());
 
         verify(spotifyClient, times(1)).getRecommendations(anyString(), anyString(), anyInt());
+        verify(recommendationCache, atLeastOnce()).get(anyLong(), any());
+        assertThat(result.getSpotifyTrackId()).isNotNull();
         assertThat(result).isNotNull();
+    }
+
+
+    @Test
+    @DisplayName("캐시 리프레시 조건 확인")
+    void needsRefresh_should_return_true_when_less_than_threshold(){
+        ConcurrentLinkedQueue<TrackRecommendationResponse> queue = new ConcurrentLinkedQueue<>();
+        assertThat(recommendationService.needsRefresh(queue)).isTrue();
     }
 
 
