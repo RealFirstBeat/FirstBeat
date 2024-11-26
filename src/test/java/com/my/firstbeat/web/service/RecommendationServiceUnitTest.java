@@ -156,6 +156,47 @@ class RecommendationServiceUnitTest extends DummyObject {
         assertThat(result).isNotNull();
     }
 
+    @Test
+    @DisplayName("추천 트랙 조회: 캐시에 데이터가 있지만 모두 플레이리스트에 존재하는 경우 새로운 추천")
+    void getRecommendation_when_all_cached_tracks_in_playlist(){
+        List<Genre> genreList = Arrays.asList(
+                new Genre("k-pop"),
+                new Genre("dance")
+        );
+
+        Queue<TrackRecommendationResponse> initalQueue = new ConcurrentLinkedQueue<>();
+        TrackRecommendationResponse cachedTrack = new TrackRecommendationResponse(
+                TrackResponse.builder()
+                        .id("캐시된 트랙 id")
+                        .trackName("캐시된 트랙 이름")
+                        .artists(new TrackResponse.ArtistResponse("nct wish"))
+                        .build()
+        );
+        initalQueue.offer(cachedTrack);
+
+        List<TrackResponse> newTrack = List.of(
+                TrackResponse.builder()
+                        .id("새 트랙 id")
+                        .trackName("새 트랙 이름")
+                        .artists(new TrackResponse.ArtistResponse("nct wish"))
+                        .build());
+        RecommendationResponse mockRecommendation = new RecommendationResponse();
+        mockRecommendation.setTracks(newTrack);
+
+        given(userService.findByIdOrFail(testUser.getId())).willReturn(testUser);
+        given(recommendationCache.get(eq(testUser.getId()), any())).willReturn(initalQueue);
+        given(trackRepository.existsInUserPlaylist(eq(testUser), eq("캐시된 트랙 id"))).willReturn(true);
+        given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(genreList);
+        given(spotifyClient.getRecommendations(anyString(), anyString(), anyInt())).willReturn(mockRecommendation);
+        given(trackRepository.existsInUserPlaylist(eq(testUser), eq("새 트랙 id"))).willReturn(false);
+
+        //when
+        TrackRecommendationResponse results = recommendationService.getRecommendations(testUser.getId());
+
+        assertThat(results.getSpotifyTrackId()).isEqualTo("새 트랙 id");
+        verify(spotifyClient, times(1)).getRecommendations(anyString(), anyString(), anyInt());
+    }
+
 
     @Test
     @DisplayName("캐시 리프레시 조건 확인")
