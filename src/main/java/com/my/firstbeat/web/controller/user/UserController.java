@@ -1,15 +1,15 @@
 package com.my.firstbeat.web.controller.user;
 
 import com.my.firstbeat.web.config.security.loginuser.LoginUser;
+import com.my.firstbeat.web.controller.user.dto.request.UpdateMyPageRequest;
 import com.my.firstbeat.web.controller.user.dto.response.GetMyPageResponse;
+import com.my.firstbeat.web.controller.user.dto.response.UpdateMyPageResponse;
 import com.my.firstbeat.web.service.UserService;
 import com.my.firstbeat.web.util.api.ApiResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +24,15 @@ public class UserController {
 
         GetMyPageResponse response = userService.getUserData(userId);
 
+        return ResponseEntity.ok(ApiResult.success(response));
+    }
+
+    @PatchMapping("/mypage")
+    public ResponseEntity<ApiResult<UpdateMyPageResponse>> updateMyPage(
+            @AuthenticationPrincipal LoginUser loginUser,
+            @RequestBody UpdateMyPageRequest request
+    ) {
+        UpdateMyPageResponse response = userService.updateMyPage(loginUser.getUser().getId(), request);
         return ResponseEntity.ok(ApiResult.success(response));
     }
 }
