@@ -2,8 +2,11 @@ package com.my.firstbeat.web.service;
 
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
+import com.my.firstbeat.web.domain.track.Track;
+import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.UserRepository;
@@ -17,6 +20,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+
+import java.util.Arrays;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +43,9 @@ class PlaylistServiceTest extends DummyObject {
   
   	@Mock
 	private UserRepository userRepository;
+
+    @Mock
+    private TrackRepository trackRepository;
   
   	@BeforeEach
 	void setUp() {
@@ -150,6 +161,63 @@ class PlaylistServiceTest extends DummyObject {
 		);
 		verify(playlistRepository).save(currentDefault);
 		verify(playlistRepository).save(newDefault);
+	}
+
+
+	@Test
+	@DisplayName("플레이리스트 내 추천 트랙 반환: 정상 케이스")
+	void getTrackList_success(){
+	  int page = 0;
+	  int size = 2;
+
+	  Long playlistId = 1L;
+	  Playlist playlist = Playlist.builder()
+			  .title("나만의 플레이리스트")
+			  .id(playlistId)
+			  .description("내꺼")
+			  .build();
+
+	  Page<Track> trackPage = new PageImpl<>(
+			  Arrays.asList(
+					  Track.builder()
+							  .name("노래 제목")
+							  .spotifyTrackId("spotifyTrackId")
+							  .albumCoverUrl("url")
+							  .previewUrl("url")
+							  .artistName("NctWish")
+							  .build(),
+					  Track.builder()
+							  .name("노래 제목1")
+							  .spotifyTrackId("spotifyTrackId1")
+							  .albumCoverUrl("url1")
+							  .previewUrl("url1")
+							  .artistName("NctWish1")
+							  .build()
+			  )
+	  );
+	  when(playlistRepository.findById(playlistId)).thenReturn(Optional.of(playlist));
+	  when(trackRepository.findAllByPlaylist(same(playlist), any(Pageable.class))).thenReturn(trackPage);
+
+		  //when
+	  TrackListResponse results = playlistService.getTrackList(playlistId, page, size);
+
+	  assertNotNull(results);
+	  verify(playlistRepository).findById(playlistId);
+	  verify(trackRepository).findAllByPlaylist(eq(playlist), any(Pageable.class));
+	  assertEquals(2, results.getTracks().size());
+	  assertEquals("노래 제목", results.getTracks().get(0).getTrackName());
+	  assertEquals("노래 제목1", results.getTracks().get(1).getTrackName());
+	}
+
+
+	@Test
+	@DisplayName("findByIdOrFail: 플레이리스트를 찾지 못하면 예외를 던진다")
+	void findByIdOrFail_ThrowException() {
+		Long playlistId = 1L;
+		when(playlistRepository.findById(playlistId)).thenReturn(Optional.empty());
+		assertThrows(BusinessException.class,
+				() -> playlistService.findByIdOrFail(playlistId));
+		verify(playlistRepository).findById(playlistId);
 	}
 
 }
