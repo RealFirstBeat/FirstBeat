@@ -2,6 +2,8 @@ package com.my.firstbeat.client.spotify.dto.response;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
@@ -22,7 +24,7 @@ public class TrackSearchResponse {
     private String next;
     private String previous;
     private Integer total;
-    private List<TestTrackRespDto> tracks;
+    private List<TrackResponse> tracks;
 
 
     public TrackSearchResponse(Paging<Track> trackPage) {
@@ -30,40 +32,43 @@ public class TrackSearchResponse {
         next = trackPage.getNext();
         previous = trackPage.getPrevious();
         total = trackPage.getTotal();
-        tracks = Arrays.stream(trackPage.getItems()).map(TestTrackRespDto::new).toList();
+        tracks = Arrays.stream(trackPage.getItems()).map(TrackResponse::new).toList();
     }
 
     @NoArgsConstructor
     @Getter
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class TestTrackRespDto{
+    @AllArgsConstructor
+    @Builder
+    public static class TrackResponse {
         private String trackName;
         private String id;
         private Boolean isPlayable;
         private String previewUrl;
-        private ArtistRespDto artists;
-        private String uri;
+        private ArtistResponse artists;
         private String name;
+        private String albumCoverUrl;
 
 
-        public TestTrackRespDto(Track track) {
+        public TrackResponse(Track track) {
             AlbumSimplified album = track.getAlbum();
             this.id = album.getId();
             this.isPlayable = track.getIsPlayable();
             this.previewUrl = track.getPreviewUrl();
-            this.artists = new ArtistRespDto(album.getArtists());
-            this.uri = track.getUri();
+            this.artists = new ArtistResponse(album.getArtists());
             this.name = album.getName();
             this.trackName = track.getName();
+            this.albumCoverUrl = Arrays.stream(album.getImages()).toList().get(0).getUrl();
         }
 
         @NoArgsConstructor
         @Getter
         @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-        public static class ArtistRespDto{
+        @AllArgsConstructor
+        public static class ArtistResponse {
             private String name;
 
-            public ArtistRespDto(ArtistSimplified[] artistSimplified) {
+            public ArtistResponse(ArtistSimplified[] artistSimplified) {
                 this.name = artistSimplified[0].getName();
             }
         }
