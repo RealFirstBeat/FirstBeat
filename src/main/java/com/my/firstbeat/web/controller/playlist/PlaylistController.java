@@ -16,10 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.domain.playlist.Playlist;
-import com.my.firstbeat.web.service.PlaylistService;
-import com.my.firstbeat.web.util.api.ApiResult;
 
 @RestController
 @RequestMapping("/api/v1/playlist")
