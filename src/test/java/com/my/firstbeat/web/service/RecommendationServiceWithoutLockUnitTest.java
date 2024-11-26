@@ -11,6 +11,7 @@ import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.dummy.DummyObject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -39,7 +40,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 class RecommendationServiceWithoutLockUnitTest extends DummyObject {
 
     @InjectMocks
@@ -66,19 +67,30 @@ class RecommendationServiceWithoutLockUnitTest extends DummyObject {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    //@BeforeEach
+    @BeforeEach
     void setUp() {
         testUser = new User(1L, "test@naver.com", Role.USER);
-
-        given(userService.findByIdOrFail(testUser.getId())).willReturn(testUser);
+        given(userService.findByIdOrFail(anyLong())).willReturn(testUser);
 
         given(trackRepository.existsInUserPlaylist(any(), anyString())).willReturn(false);
-
-        given(genreRepository.findTop5GenresByUser(any(), any(PageRequest.class)))
-                .willReturn(List.of(new Genre("pop"), new Genre("rock")));
-
+        given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(
+                List.of(new Genre("pop"), new Genre("k-pop")));
         given(playlistRepository.findAllTrackByUser(any()))
-                .willReturn(List.of(Track.builder().spotifyTrackId("test1").build(), Track.builder().spotifyTrackId("test2").build()));
+                .willReturn(List.of(Track.builder().spotifyTrackId("test1").build(),
+                        Track.builder().spotifyTrackId("test2").build()));
+
+
+    }
+
+    @Test
+    @DisplayName("여러 사용자가 동시에 추천 요청 테스트: 여러 스레드가 동시에 캐시에 접근할 때 안전한지 확인")
+    void getRecommendations_with_multiple_threads_requests() throws InterruptedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(CONCURRENT_USERS); //10개
+        CountDownLatch latch = new CountDownLatch(CONCURRENT_USERS * REQUESTS_PER_USER); //10*5 = 50번
+        List<Future<TrackRecommendationResponse>> futures = new ArrayList<>(); //비동기 결과 저장해야 함
+        Set<String> recommendedTracks = Collections.synchronizedSet(new HashSet<>());
+        AtomicInteger requestCount = new AtomicInteger(0);
+
 
         RecommendationResponse mockRecommendation = new RecommendationResponse();
         List<TrackResponse> tracks = IntStream.range(0, 20)
@@ -96,16 +108,6 @@ class RecommendationServiceWithoutLockUnitTest extends DummyObject {
                     response.setTracks(tracks);
                     return response;
                 });
-    }
-
-    @Test
-    @DisplayName("여러 사용자가 동시에 추천 요청 테스트: 여러 스레드가 동시에 캐시에 접근할 때 안전한지 확인")
-    void getRecommendations_with_multiple_threads_requests() throws InterruptedException {
-        ExecutorService executorService = Executors.newFixedThreadPool(CONCURRENT_USERS); //10개
-        CountDownLatch latch = new CountDownLatch(CONCURRENT_USERS * REQUESTS_PER_USER); //10*5 = 50번
-        List<Future<TrackRecommendationResponse>> futures = new ArrayList<>(); //비동기 결과 저장해야 함
-        Set<String> recommendedTracks = Collections.synchronizedSet(new HashSet<>());
-        AtomicInteger requestCount = new AtomicInteger(0);
 
         for(int user = 0; user < CONCURRENT_USERS; user++){
             final int userId = user;
@@ -162,7 +164,7 @@ class RecommendationServiceWithoutLockUnitTest extends DummyObject {
     }
 
     @Test
-    @DisplayName("여러 스레드가 동시에 캐시 리프레시 시도할 때 중복 리프레시 발생하는지 테스트")
+    @DisplayName("여러 스레드가 동시에 캐시 리프레시 시도할 때 중복 API 호출 발생 테스트")
     void getRecommendations_with_concurrent_refresh_requests_should_cause_duplicatedRefresh() throws InterruptedException {
 
         int concurrentRequests = 50;
@@ -172,16 +174,6 @@ class RecommendationServiceWithoutLockUnitTest extends DummyObject {
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch completionLatch = new CountDownLatch(concurrentRequests);
         AtomicInteger apiCallCount = new AtomicInteger(0); //api 호출 카운트
-
-        testUser = new User(1L, "test@naver.com", Role.USER);
-        given(userService.findByIdOrFail(anyLong())).willReturn(testUser);
-
-        given(trackRepository.existsInUserPlaylist(any(), anyString())).willReturn(false);
-        given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(
-                List.of(new Genre("pop"), new Genre("k-pop")));
-        given(playlistRepository.findAllTrackByUser(any()))
-                .willReturn(List.of(Track.builder().spotifyTrackId("test1").build(),
-                        Track.builder().spotifyTrackId("test2").build()));
 
 
         given(spotifyClient.getRecommendations(anyString(), anyString(), anyInt()))
@@ -195,7 +187,7 @@ class RecommendationServiceWithoutLockUnitTest extends DummyObject {
                     RecommendationResponse response = new RecommendationResponse();
 
                     List<TrackResponse> tracks = IntStream.range(0, 20)
-                            .mapToObj(i -> builder()
+                            .mapToObj(i -> TrackResponse.builder()
                                     .id("spotifyId: "+i)
                                     .artists(new ArtistResponse("nct wish"))
                                     .build())
@@ -207,9 +199,6 @@ class RecommendationServiceWithoutLockUnitTest extends DummyObject {
 
         //캐시 초기화를 위해 첫 번째 호출 수행
         recommendationService.getRecommendations(testUser.getId());
-        //카운트 리셋
-        apiCallCount.set(0);
-
 
 
         //여러 스레드에서 동시에 요청
