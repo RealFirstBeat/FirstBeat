@@ -41,6 +41,8 @@ public class RecommendationService {
     private static final int RECOMMENDATIONS_SIZE = 20; //한 번에 받아오는 추천 트랙 수
     private static final int MAX_ATTEMPTS = 20; //추천한 곡이 이미 유저의 플레이리스트에 있는 경우 다시 추천 큐에서 꺼내올 수 있는 최대 횟수
 
+    private static final int SEED_MAX = 5;
+
     public TrackRecommendationResponse getRecommendations(Long userId) {
         User user = userService.findByIdOrFail(userId);
 
@@ -87,7 +89,7 @@ public class RecommendationService {
     }
 
     private String getSeedGenres(User user){
-        String seedGenres = genreRepository.findTop5GenresByUser(user, PageRequest.of(0, 5))
+        String seedGenres = genreRepository.findTop5GenresByUser(user, PageRequest.of(0, SEED_MAX))
                 .stream()
                 .map(Genre::getName)
                 .collect(Collectors.joining(","));
@@ -101,7 +103,7 @@ public class RecommendationService {
         List<Track> trackList = new ArrayList<>(playlistRepository.findAllTrackByUser(user));
         Collections.shuffle(trackList);
         return trackList.stream()
-                .limit(5)
+                .limit(SEED_MAX)
                 .map(Track::getSpotifyTrackId)
                 .collect(Collectors.joining(","));
     }
