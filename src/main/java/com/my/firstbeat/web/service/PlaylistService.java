@@ -1,9 +1,15 @@
 package com.my.firstbeat.web.service;
 
+import java.time.LocalDateTime;
+
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
+import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrack;
+import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
+import com.my.firstbeat.web.domain.track.Track;
+import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.ex.BusinessException;
@@ -21,8 +27,10 @@ public class PlaylistService {
 
     private final PlaylistRepository playlistRepository;
   	private final UserRepository userRepository;
+    private final PlaylistTrackRepository playlistTrackRepository;
+	private final TrackRepository trackRepository;
 
-    @Transactional
+	@Transactional
     public PlaylistCreateResponse createPlaylist(User user, PlaylistCreateRequest request) {
 
         if (playlistRepository.existsByUserAndTitle(user, request.getTitle())) {
@@ -62,6 +70,7 @@ public class PlaylistService {
 	}
 
 	//디폴트 플레이리스트 변경 로직
+	@Transactional
 	public void changeDefaultPlaylist(Long userId, Long playlistId) {
 		// 최소 한개는 default playlist 가 있다고 가정
 		// 기존 유저의 dafault playlist 를 가져와서
@@ -78,5 +87,29 @@ public class PlaylistService {
 		newDefaultPlaylist.updateDefault(true);
 		playlistRepository.save(newDefaultPlaylist);
 	}
+
+	public Playlist getDefaultPlaylist(Long userId) {
+		return playlistRepository.findByUserIdAndIsDefault(userId, true)
+			.orElseThrow(() -> new IllegalArgumentException("디폴트 플레이리스트가 존재하지 않습니다."));
+	}
+
+	@Transactional
+	public String addTrackToDefaultPlaylist(User user, Long spotifyTrackId) {
+		Playlist defaultPlaylist = getDefaultPlaylist(user.getId()); // 디폴트 플레이리스트 가져오기
+
+		Track track = trackRepository.findById(spotifyTrackId)
+			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 트랙 ID입니다: " + spotifyTrackId));
+
+		boolean exists = playlistTrackRepository.existsByPlaylistAndTrack(defaultPlaylist, track);
+		if (exists) {
+			return "곡이 이미 디폴트 플레이리스트에 존재합니다.";
+		}
+
+		PlaylistTrack newTrack = new PlaylistTrack(defaultPlaylist, track);
+		playlistTrackRepository.save(newTrack);
+
+		return "곡이 디폴트 플레이리스트에 추가되었습니다.";
+	}
+
 }
 
