@@ -2,12 +2,17 @@ package com.my.firstbeat.web.service;
 
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
+import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +26,7 @@ public class PlaylistService {
 
     private final PlaylistRepository playlistRepository;
   	private final UserRepository userRepository;
+    private final TrackRepository trackRepository;
 
     @Transactional
     public PlaylistCreateResponse createPlaylist(User user, PlaylistCreateRequest request) {
@@ -77,6 +83,18 @@ public class PlaylistService {
 		// 새로운 defalut를 세팅
 		newDefaultPlaylist.updateDefault(true);
 		playlistRepository.save(newDefaultPlaylist);
+	}
+
+	public TrackListResponse getTrackList(Long playlistId, int page, int size) {
+		Playlist playlist = findByIdOrFail(playlistId);
+		Pageable pageable = PageRequest.of(page, size);
+		trackRepository.findAllByPlaylist(playlist, pageable);
+
+	}
+
+	public Playlist findByIdOrFail(Long playlistId){
+		return playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
 	}
 }
 
