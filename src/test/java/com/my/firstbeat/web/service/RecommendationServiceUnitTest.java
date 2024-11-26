@@ -23,14 +23,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -71,6 +72,7 @@ class RecommendationServiceUnitTest extends DummyObject {
     private Cache<Long, Queue<TrackRecommendationResponse>> recommendationCache;
 
     private User testUser;
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
 
     @BeforeEach
@@ -243,6 +245,41 @@ class RecommendationServiceUnitTest extends DummyObject {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MAX_RECOMMENDATION_ATTEMPTS_EXCEED);
 
         verify(trackRepository, times(21)).existsInUserPlaylist(eq(testUser), anyString());
+        verify(spotifyClient, times(1)).getRecommendations(anyString(), anyString(), anyInt());
+    }
+
+    @Test
+    @DisplayName("백그라운드 추천 트랙 리프레시: 정상 동작 확인")
+    void backgroundRefresh_should_refresh_recommendations(){
+        Queue<TrackRecommendationResponse> recommendations = new ConcurrentLinkedQueue<>();
+        ConcurrentMap<Long, Queue<TrackRecommendationResponse>> cacheMap = new ConcurrentHashMap<>();
+        cacheMap.put(testUser.getId(), recommendations);
+
+        List<TrackResponse> newTracks = IntStream.range(0, 20)
+                .mapToObj(i -> TrackResponse.builder()
+                        .id("new-track-" + i)
+                        .trackName("New Track " + i)
+                        .artists(new TrackResponse.ArtistResponse("New Artist"))
+                        .build())
+                .toList();
+        RecommendationResponse newRecommendations = new RecommendationResponse();
+        newRecommendations.setTracks(newTracks);
+
+        given(recommendationCache.asMap()).willReturn(cacheMap);
+        given(recommendationCache.get(eq(testUser.getId()), any())).willReturn(new ConcurrentLinkedQueue<>());
+        given(userService.findByIdOrFail(testUser.getId())).willReturn(testUser);
+        given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(List.of(new Genre("k-pop")));
+        given(playlistRepository.findAllTrackByUser(any(), any())).willReturn(Arrays.asList(
+                Track.builder().name("Steady").spotifyTrackId("spotifyTrackId 112").build(),
+                Track.builder().name("Supercute").spotifyTrackId("spotifyTrackId 111").build()
+        ));
+
+        given(spotifyClient.getRecommendations(anyString(), anyString(), anyInt())).willReturn(newRecommendations);
+
+
+        //when
+        recommendationService.backgroundRefresh();
+
         verify(spotifyClient, times(1)).getRecommendations(anyString(), anyString(), anyInt());
     }
 
