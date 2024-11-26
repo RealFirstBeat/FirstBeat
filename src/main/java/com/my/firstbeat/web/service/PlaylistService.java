@@ -2,6 +2,7 @@ package com.my.firstbeat.web.service;
 
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.user.User;
@@ -10,6 +11,9 @@ import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,10 +23,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PlaylistService {
 
-    private final PlaylistRepository playlistRepository;
-  	private final UserRepository userRepository;
+	private final PlaylistRepository playlistRepository;
+	private final UserRepository userRepository;
 
-    @Transactional
+	// 플레이리스트 생성
+	@Transactional
     public PlaylistCreateResponse createPlaylist(User user, PlaylistCreateRequest request) {
 
         if (playlistRepository.existsByUserAndTitle(user, request.getTitle())) {
@@ -36,10 +41,23 @@ public class PlaylistService {
         );
 
         Playlist savedPlaylist = playlistRepository.save(playlist);
-        log.debug("Saved playlist: {}", savedPlaylist);
+        log.debug("Saved playlist: {}", savedPlaylist.getTitle());
 
         return new PlaylistCreateResponse(savedPlaylist.getId(), savedPlaylist.getTitle(), savedPlaylist.getDescription());
     }
+
+	// 내가 만든 플레이리스트 조회
+	public Page<PlaylistRetrieveResponse> getMyPlaylists(Long userId, Pageable pageable) {
+		Page<Playlist> playlists = playlistRepository.findByUserId(userId, pageable);
+
+		if (playlists.isEmpty()) {
+			// 플레이리스트가 없는 경우
+			throw new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND);
+		}
+        log.debug("플레이리스트 {}개가 조회되었습니다. 사용자: {} ", playlists.getTotalElements(), userId);
+		return playlists.map(playlist ->
+				new PlaylistRetrieveResponse(playlist.getId(), playlist.getTitle()));
+	}
 
 	// 디폴트 플레이리스트 가져오기 또는 생성
 	public Playlist getOrCreateDefaultPlaylist(Long userId) {

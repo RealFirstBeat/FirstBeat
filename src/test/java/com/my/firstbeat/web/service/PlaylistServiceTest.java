@@ -2,6 +2,7 @@ package com.my.firstbeat.web.service;
 
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.user.User;
@@ -9,14 +10,22 @@ import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.dummy.DummyObject;
 import com.my.firstbeat.web.ex.BusinessException;
+import com.my.firstbeat.web.ex.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,11 +44,6 @@ class PlaylistServiceTest extends DummyObject {
   
   	@Mock
 	private UserRepository userRepository;
-  
-  	@BeforeEach
-	void setUp() {
-		MockitoAnnotations.openMocks(this); // Mock 객체 초기화
-	}
 
     @Test
     @DisplayName("플레이리스트 생성: 정상")
@@ -74,6 +78,48 @@ class PlaylistServiceTest extends DummyObject {
         // When & Then
         assertThrows(BusinessException.class, () -> playlistService.createPlaylist(mockUser, request));
     }
+
+	@Test
+	@DisplayName("내가 만든 플레이리스트 조회: 성공")
+	void getMyPlaylists_success() {
+		// Given
+		User mockUser = mockUserWithId(1L);
+		Pageable pageable = PageRequest.of(0, 10);
+
+		List<Playlist> mockPlaylists = List.of(
+				new Playlist("My Playlists 1", "Playlist 1", mockUser),
+				new Playlist("My Playlists 2", "Playlist 2", mockUser)
+		);
+		Page<Playlist> mockPage = new PageImpl<>(mockPlaylists, pageable, mockPlaylists.size());
+		Mockito.when(playlistRepository.findByUserId(mockUser.getId(), pageable)).thenReturn(mockPage);
+
+		// When
+		Page<PlaylistRetrieveResponse> result = playlistService.getMyPlaylists(mockUser.getId(), pageable);
+
+		// Then
+		assertNotNull(result);
+		assertEquals(2, result.getTotalElements());
+		assertEquals("My Playlists 1", result.getContent().get(0).getTitle());
+		assertEquals("My Playlists 2", result.getContent().get(1).getTitle());
+		Mockito.verify(playlistRepository).findByUserId(mockUser.getId(), pageable);
+	}
+
+	@Test
+	@DisplayName("내가 만든 플레이리스트 조회: 존재하지 않는 경우")
+	void getMyPlaylists_isEmpty() {
+		// Given
+		User mockUser = mockUserWithId(1L);
+		Pageable pageable = PageRequest.of(0, 10);
+		Mockito.when(playlistRepository.findByUserId(mockUser.getId(), pageable)).thenReturn(Page.empty());
+
+		// When & Then
+		BusinessException e = assertThrows(
+				BusinessException.class, () -> playlistService.getMyPlaylists(mockUser.getId(), pageable)
+		);
+
+		assertEquals(ErrorCode.PLAYLIST_NOT_FOUND, e.getErrorCode());
+		Mockito.verify(playlistRepository).findByUserId(mockUser.getId(), pageable);
+	}
 
 	@Test
 	@DisplayName("디폴트 플레이리스트가 없으면 생성")
