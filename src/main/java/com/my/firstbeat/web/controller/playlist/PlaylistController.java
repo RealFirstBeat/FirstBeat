@@ -1,8 +1,16 @@
 package com.my.firstbeat.web.controller.playlist;
 
+import com.my.firstbeat.web.config.security.loginuser.LoginUser;
+import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
+import com.my.firstbeat.web.service.PlaylistService;
+import com.my.firstbeat.web.util.api.ApiResult;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,7 +26,14 @@ import com.my.firstbeat.web.util.api.ApiResult;
 @RequiredArgsConstructor
 public class PlaylistController {
 
-	private final PlaylistService playlistService;
+    private final PlaylistService playlistService;
+
+    @PostMapping
+    public ResponseEntity<ApiResult<PlaylistCreateResponse>> createPlaylist(
+            @AuthenticationPrincipal LoginUser loginUser,
+            @Valid @RequestBody PlaylistCreateRequest request) {
+        return ResponseEntity.ok(ApiResult.success(playlistService.createPlaylist(loginUser.getUser(), request)));
+    }
 
 	// 디폴트 플레이리스트 가져오기 또는 생성
 	@GetMapping("/default")

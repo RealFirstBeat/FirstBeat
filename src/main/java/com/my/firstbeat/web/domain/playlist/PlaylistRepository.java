@@ -1,5 +1,6 @@
 package com.my.firstbeat.web.domain.playlist;
 
+
 import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.user.User;
 import java.util.Optional;
@@ -9,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
+  
+    boolean existsByUserAndTitle(User user, String title);
 
 
     @Query("select t from Playlist p " +

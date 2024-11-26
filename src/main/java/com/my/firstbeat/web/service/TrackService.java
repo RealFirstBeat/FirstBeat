@@ -6,6 +6,7 @@ import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
 import com.my.firstbeat.client.spotify.ex.SpotifyApiException;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
 import com.my.firstbeat.web.domain.genre.Genre;
+import com.my.firstbeat.web.domain.genre.GenreRepository;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
 import com.my.firstbeat.web.domain.track.Track;
@@ -16,6 +17,7 @@ import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +34,7 @@ public class TrackService {
 
     private final SpotifyClient spotifyClient;
     private final UserService userService;
-    private final UserGenreRepository userGenreRepository;
+    private final GenreRepository genreRepository;
     private final PlaylistRepository playlistRepository;
     private final TrackRepository trackRepository;
 
@@ -66,8 +68,8 @@ public class TrackService {
 
         for(int attempts = 1; attempts <= MAX_ATTEMPTS; attempts++){
             //비어있거나 5개 이하면 다시 spotifyClient 로 요청
-            //TODO 이거 스레드 동시성 처리하면 트레이드 오프가 있는지 테스트
-            if(userRecommendations.size() <= REFRESH_THRESHOLD){
+            //TODO 이거 스레드 동시성 처리하면 트레이드 오프가 있는지
+            if(userRecommendations.size() <= REFRESH_THRESHOLD) {
                 refreshRecommendations(user);
             }
 
@@ -108,7 +110,8 @@ public class TrackService {
     }
 
     private String getSeedGenres(User user){
-        String seedGenres = userGenreRepository.findTop5GenresByUser(user)
+
+        String seedGenres = genreRepository.findTop5GenresByUser(user, PageRequest.of(0, 5))
                 .stream()
                 .map(Genre::getName)
                 .collect(Collectors.joining(","));

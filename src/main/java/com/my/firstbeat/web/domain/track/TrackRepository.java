@@ -13,5 +13,5 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
             "join PlaylistTrack pt on pt.track = t " +
             "join Playlist p on pt.playlist = p " +
             "where p.user = :user and t.spotifyTrackId = :spotifyTrackId")
-    boolean existsInUserPlaylist(@Param("user") User user, String spotifyTrackId);
+    boolean existsInUserPlaylist(@Param("user") User user, @Param("spotifyTrackId") String spotifyTrackId);
 }
