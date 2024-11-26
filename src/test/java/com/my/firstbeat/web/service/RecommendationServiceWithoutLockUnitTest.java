@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 import java.util.*;
 import java.util.concurrent.*;
@@ -64,6 +65,7 @@ class RecommendationServiceWithoutLockUnitTest extends DummyObject {
     private User testUser;
     private static final int CONCURRENT_USERS = 10;
     private static final int REQUESTS_PER_USER = 5;
+    private static final int SEED_MAX = 5;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -75,7 +77,7 @@ class RecommendationServiceWithoutLockUnitTest extends DummyObject {
         given(trackRepository.existsInUserPlaylist(any(), anyString())).willReturn(false);
         given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(
                 List.of(new Genre("pop"), new Genre("k-pop")));
-        given(playlistRepository.findAllTrackByUser(any()))
+        given(playlistRepository.findAllTrackByUser(any(), any(Pageable.class)))
                 .willReturn(List.of(Track.builder().spotifyTrackId("test1").build(),
                         Track.builder().spotifyTrackId("test2").build()));
 

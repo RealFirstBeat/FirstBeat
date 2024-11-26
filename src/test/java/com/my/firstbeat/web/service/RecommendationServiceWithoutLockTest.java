@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.ArrayList;
@@ -81,7 +82,7 @@ class RecommendationServiceWithoutLockTest extends DummyObject {
         given(trackRepository.existsInUserPlaylist(any(), anyString())).willReturn(false);
         given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(
                 List.of(new Genre("pop"), new Genre("k-pop")));
-        given(playlistRepository.findAllTrackByUser(any()))
+        given(playlistRepository.findAllTrackByUser(any(), any(Pageable.class)))
                 .willReturn(List.of(Track.builder().spotifyTrackId("test1").build(),
                         Track.builder().spotifyTrackId("test2").build()));
 

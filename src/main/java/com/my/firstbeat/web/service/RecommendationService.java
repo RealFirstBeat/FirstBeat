@@ -174,8 +174,7 @@ public class RecommendationService {
 
 
     private String getSeedTracks(User user){
-        List<Track> trackList = new ArrayList<>(playlistRepository.findAllTrackByUser(user));
-        Collections.shuffle(trackList);
+        List<Track> trackList = playlistRepository.findAllTrackByUser(user, PageRequest.of(0, SEED_MAX));
         return trackList.stream()
                 .limit(SEED_MAX)
                 .map(Track::getSpotifyTrackId)
