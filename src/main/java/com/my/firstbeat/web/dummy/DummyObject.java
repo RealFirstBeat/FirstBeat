@@ -1,8 +1,13 @@
 package com.my.firstbeat.web.dummy;
 
+import com.my.firstbeat.web.domain.genre.Genre;
 import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.User;
+import com.my.firstbeat.web.domain.userGenre.UserGenre;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DummyObject {
 
@@ -17,5 +22,20 @@ public class DummyObject {
                 .password(encoder.encode(mockUserPassword))
                 .role(Role.USER)
                 .build();
+    }
+
+    protected List<UserGenre> mockUserGenres(User user) {
+        List<UserGenre> userGenres = new ArrayList<>();
+
+        Genre genre1 = Genre.builder().name("Rock").build();
+        Genre genre2 = Genre.builder().name("Jazz").build();
+
+        UserGenre userGenre1 = UserGenre.builder().user(user).genre(genre1).build();
+        UserGenre userGenre2 = UserGenre.builder().user(user).genre(genre2).build();
+
+        userGenres.add(userGenre1);
+        userGenres.add(userGenre2);
+
+        return userGenres;
     }
 }
