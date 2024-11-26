@@ -34,7 +34,7 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        List<UserGenre> userGenres = userGenreRepository.findByUserId(userId);
+        List<UserGenre> userGenres = userGenreRepository.findByUserIdWithGenre(userId);
         // 관심 장르 조회
         List<String> genres = userGenres.stream()
                 .map(userGenre -> userGenre.getGenre().getName())
