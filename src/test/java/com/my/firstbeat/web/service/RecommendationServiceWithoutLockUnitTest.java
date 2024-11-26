@@ -40,7 +40,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class TrackServiceTest extends DummyObject {
+class RecommendationServiceWithoutLockUnitTest extends DummyObject {
 
     @InjectMocks
     private RecommendationServiceWithoutLock recommendationService;
@@ -162,7 +162,7 @@ class TrackServiceTest extends DummyObject {
     }
 
     @Test
-    @DisplayName("여러 스레드가 동시에 캐시 리프레시 시도할 때 중복 리프레시 발생하지 않는지 테스트")
+    @DisplayName("여러 스레드가 동시에 캐시 리프레시 시도할 때 중복 리프레시 발생하는지 테스트")
     void getRecommendations_with_concurrent_refresh_requests_should_cause_duplicatedRefresh() throws InterruptedException {
 
         int concurrentRequests = 50;
