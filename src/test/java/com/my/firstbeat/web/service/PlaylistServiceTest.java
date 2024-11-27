@@ -12,6 +12,7 @@ import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.dummy.DummyObject;
 import com.my.firstbeat.web.ex.BusinessException;
+import com.my.firstbeat.web.ex.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +23,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.util.Arrays;
@@ -169,6 +171,7 @@ class PlaylistServiceTest extends DummyObject {
 	void getTrackList_success(){
 	  int page = 0;
 	  int size = 2;
+		Pageable pageable = PageRequest.of(page, size);
 
 	  Long playlistId = 1L;
 	  Playlist playlist = Playlist.builder()
@@ -193,17 +196,21 @@ class PlaylistServiceTest extends DummyObject {
 							  .previewUrl("url1")
 							  .artistName("NctWish1")
 							  .build()
-			  )
+			  ),
+			  pageable,
+			  2
 	  );
-	  when(playlistRepository.findById(playlistId)).thenReturn(Optional.of(playlist));
-	  when(trackRepository.findAllByPlaylist(same(playlist), any(Pageable.class))).thenReturn(trackPage);
+		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository);
+		PlaylistService spyService = spy(realService);
+
+		doReturn(playlist).when(spyService).findByIdOrFail(playlistId);
+		when(trackRepository.findAllByPlaylist(playlist, pageable)).thenReturn(trackPage);
 
 		  //when
-	  TrackListResponse results = playlistService.getTrackList(playlistId, page, size);
+	  TrackListResponse results = spyService.getTrackList(playlistId, page, size);
 
 	  assertNotNull(results);
-	  verify(playlistRepository).findById(playlistId);
-	  verify(trackRepository).findAllByPlaylist(eq(playlist), any(Pageable.class));
+	  verify(trackRepository, times(1)).findAllByPlaylist(eq(playlist), any(Pageable.class));
 	  assertEquals(2, results.getTracks().size());
 	  assertEquals("노래 제목", results.getTracks().get(0).getTrackName());
 	  assertEquals("노래 제목1", results.getTracks().get(1).getTrackName());
@@ -211,14 +218,21 @@ class PlaylistServiceTest extends DummyObject {
 
 
 	@Test
-	@DisplayName("findByIdOrFail: 플레이리스트를 찾지 못하면 예외를 던진다")
-	void findByIdOrFail_ThrowException() {
-		Long playlistId = 1L;
-		when(playlistRepository.findById(playlistId)).thenReturn(Optional.empty());
-		assertThrows(BusinessException.class,
-				() -> playlistService.findByIdOrFail(playlistId));
-		verify(playlistRepository).findById(playlistId);
+	@DisplayName("플레이리스트 내 추천 트랙 반환: 존재하지 않는 플레이리스트 조회 시 예외 발생")
+	void getTrackList_PlaylistNotFound() {
+		Long playlistId = 999L;
+		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository);
+		PlaylistService spyService = spy(realService);
+		doThrow(new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND))
+				.when(spyService).findByIdOrFail(playlistId);
+
+
+		assertThrows(BusinessException.class, () ->
+				spyService.getTrackList(playlistId, 0, 10));
+
+		verify(trackRepository, never()).findAllByPlaylist(any(), any());
 	}
+
 
 }
 
