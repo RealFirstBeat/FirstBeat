@@ -20,6 +20,11 @@ recommendation:
     key_prefix: "recommendation:user:"
     cache_ttl_hours: 24
 
+lock:
+  key_prefix: "recommendation:lock:"
+  wait_time: 3
+  lease_time: 10
+
 
 server:
   port: 8080

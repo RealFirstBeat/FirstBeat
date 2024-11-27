@@ -1,4 +1,4 @@
-package com.my.firstbeat.web.service.recommemdation;
+package com.my.firstbeat.web.service.recommemdation.property;
 
 import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;

@@ -13,6 +13,7 @@ import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
 import com.my.firstbeat.web.service.UserService;
+import com.my.firstbeat.web.service.recommemdation.property.RecommendationProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -24,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
