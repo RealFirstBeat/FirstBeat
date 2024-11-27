@@ -6,14 +6,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "async")
 @Getter
+@Setter
 public class AsyncProperties {
     private RecommendationExecutor recommendation = new RecommendationExecutor();
 
     @Getter
+    @Setter
     public static class RecommendationExecutor {
-        private int corePoolSize = 5;
-        private int maxPoolSize = 10;
-        private int queueCapacity = 100;
-        private int keepAliveSeconds = 60;
+        private int corePoolSize;
+        private int maxPoolSize;
+        private int queueCapacity;
+        private int keepAliveSeconds;
     }
 }

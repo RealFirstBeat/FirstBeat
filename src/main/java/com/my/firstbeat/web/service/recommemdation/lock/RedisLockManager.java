@@ -114,18 +114,18 @@ public class RedisLockManager {
 
                 attempts++;
                 if(attempts < properties.getBackground().getMaxAttempts()){
-                    log.warn("키: {}에 대한 백그라운드 작업 락 획득 실패. 시도 횟수: {}/{}. {}ms 후 재시도",
+                    log.warn("key: {}에 대한 백그라운드 작업 락 획득 실패. 시도 횟수: {}/{}. {}ms 후 재시도",
                             key, attempts, properties.getBackground().getMaxAttempts(), backoffMs);
                     Thread.sleep(backoffMs);
                     backoffMs *= properties.getBackground().getBackOffMultiplier();
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.error("키: {}에 대한 백그라운드 작업 락 처리 중 예기치 못한 오류 발생. 시도 횟수: {}/{}",
+                log.error("key: {}에 대한 백그라운드 작업 락 처리 중 예기치 못한 오류 발생. 시도 횟수: {}/{}",
                         key, attempts, properties.getBackground().getMaxAttempts(), e);
                 return false;
             } catch (Exception e){
-                log.error("키: {}에 대한 백그라운드 작업 락 처리 중 예기치 못한 오류 발생. 시도 횟수: {}/{}",
+                log.error("key: {}에 대한 백그라운드 작업 락 처리 중 예기치 못한 오류 발생. 시도 횟수: {}/{}",
                         key, attempts, properties.getBackground().getMaxAttempts(), e);
                 throw e;
             } finally {
@@ -134,7 +134,7 @@ public class RedisLockManager {
                 }
             }
         }
-        log.error("키: {}에 대한 백그라운드 작업 락 획득 실패. 최대 시도 횟수({}) 도달", key, properties.getBackground().getMaxAttempts());
+        log.error("key: {}에 대한 백그라운드 작업 락 획득 실패. 최대 시도 횟수({}) 도달", key, properties.getBackground().getMaxAttempts());
         return false;
     }
 

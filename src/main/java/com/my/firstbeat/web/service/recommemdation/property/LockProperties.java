@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "lock")
 @Getter
+@Setter
 public class LockProperties {
 
     private String keyPrefix;

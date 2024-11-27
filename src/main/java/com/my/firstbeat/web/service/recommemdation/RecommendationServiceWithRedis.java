@@ -45,7 +45,6 @@ public class RecommendationServiceWithRedis {
     private final RedisLockManager lockManager;
     private final RecommendationProperties properties;
     private final ExecutorService recommendationBackgroundExecutor;
-    private final RedisTemplate<String, String> stringRedisTemplate;
 
     public TrackRecommendationResponse getRecommendations(Long userId) {
         User user = userService.findByIdOrFail(userId);
@@ -117,12 +116,14 @@ public class RecommendationServiceWithRedis {
         List<String> refreshKeys = new ArrayList<>();
 
         //이전에 실패한 작업 먼저 가져오기
-        Set<String> failedTasks = stringRedisTemplate.opsForSet()
+        Set<Object> failedTasks = redisTemplate.opsForSet()
                 .members(properties.getRedis().getFailedTasksKey());
 
         if(!failedTasks.isEmpty()){
             log.info("이전 갱신 작업에서 실패한 {} 개의 작업을 먼저 처리합니다", failedTasks.size());
-            refreshKeys.addAll(failedTasks);
+            failedTasks.stream()
+                    .map(Object::toString)
+                    .forEach(refreshKeys::add);
         }
 
         ScanOptions scanOptions = ScanOptions.scanOptions()
