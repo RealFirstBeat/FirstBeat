@@ -3,6 +3,7 @@ package com.my.firstbeat.web.service;
 
 import com.my.firstbeat.client.spotify.SpotifyClient;
 import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
+import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
 import com.my.firstbeat.web.domain.genre.Genre;
 import com.my.firstbeat.web.domain.genre.GenreRepository;
@@ -20,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse.*;
 
 @Service
 @RequiredArgsConstructor
@@ -40,15 +43,23 @@ public class RecommendationServiceWithoutCache {
 
     public TrackRecommendationResponse getRecommendations(Long userId) {
         User user = userService.findByIdOrFail(userId);
+        String seedGenres = getSeedGenres(user);
 
         for(int attempts = 1; attempts <= MAX_ATTEMPTS; attempts++){
             RecommendationResponse recommendation = spotifyClient.getRecommendations(
-                    getSeedGenres(user),
+                    seedGenres,
                     getSeedTracks(user),
                     RECOMMENDATIONS_SIZE
             );
-            if(!trackRepository.existsInUserPlaylist(user, recommendation.getTracks().get(0).getId())){
-                return new TrackRecommendationResponse(recommendation.getTracks().get(0));
+
+            List<TrackResponse> tracks = recommendation.getTracks();
+            if (tracks == null || tracks.isEmpty()) {
+                continue;
+            }
+
+            TrackResponse trackResponse = tracks.get(0);
+            if (trackResponse != null && !trackRepository.existsInUserPlaylist(user, trackResponse.getId())) {
+                return new TrackRecommendationResponse(trackResponse);
             }
         }
         throw new BusinessException(ErrorCode.MAX_RECOMMENDATION_ATTEMPTS_EXCEED);
