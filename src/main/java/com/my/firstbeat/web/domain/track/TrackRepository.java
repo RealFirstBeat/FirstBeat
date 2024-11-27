@@ -1,5 +1,7 @@
 package com.my.firstbeat.web.domain.track;
 
+import java.util.Optional;
+
 import com.my.firstbeat.web.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,4 +16,6 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
             "join Playlist p on pt.playlist = p " +
             "where p.user = :user and t.spotifyTrackId = :spotifyTrackId")
     boolean existsInUserPlaylist(@Param("user") User user, @Param("spotifyTrackId") String spotifyTrackId);
+
+    Optional<Track> findBySpotifyTrackId(String spotifyTrackId);
 }
