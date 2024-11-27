@@ -233,6 +233,33 @@ class PlaylistServiceTest extends DummyObject {
 		verify(trackRepository, never()).findAllByPlaylist(any(), any());
 	}
 
+	@Test
+	@DisplayName("플레이리스트 내 추천 트랙 반환: 트랙 조회 중 에러 발생 시 BusinessException throw")
+	void getTrackList_TrackFetchError() {
+		Long playlistId = 1L;
+		Playlist playlist = Playlist.builder()
+				.title("나만의 플레이리스트")
+				.id(playlistId)
+				.description("내꺼")
+				.build();
+
+		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository);
+		PlaylistService spyService = spy(realService);
+
+		doReturn(playlist).when(spyService).findByIdOrFail(playlistId);
+		when(trackRepository.findAllByPlaylist(any(), any()))
+				.thenThrow(new RuntimeException("DB 에러"));
+
+		// when & then
+		BusinessException exception = assertThrows(BusinessException.class, () ->
+				spyService.getTrackList(playlistId, 0, 10));
+
+		assertEquals(ErrorCode.TRACK_FETCH_ERROR, exception.getErrorCode());
+		verify(trackRepository).findAllByPlaylist(any(), any());
+	}
+
+
+
 
 }
 
