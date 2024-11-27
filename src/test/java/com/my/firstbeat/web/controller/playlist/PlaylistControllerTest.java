@@ -95,4 +95,16 @@ class PlaylistControllerTest extends DummyObject {
                 .andDo(print());
     }
 
+    @Test
+    @WithMockUser(username = "test1234@naver.com")
+    @DisplayName("플레이리스트 내 트랙 목록 조회: 100을 넘어선 사이즈로 요청을 보내는 경우 유효성 검사 오류")
+    void getTrackList_invalid_pageSize() throws Exception {
+        mockMvc.perform(get("/api/v1/playlist/1")
+                        .param("page", "0")
+                        .param("size", "101")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
+
 }
