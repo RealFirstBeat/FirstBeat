@@ -14,6 +14,9 @@ import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
 import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
+import com.my.firstbeat.web.domain.user.UserRepository;
+import com.my.firstbeat.web.ex.BusinessException;
+import com.my.firstbeat.web.ex.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +29,7 @@ public class PlaylistSwipeService {
 	private final PlaylistService playlistService;
 	private final TrackRepository trackRepository;
 	private final PlaylistTrackRepository playlistTrackRepository;
+	private final RecommendationService recommendationService;
 
 	/**
 	 * 좋아요 (오른쪽 스와이프)
@@ -34,7 +38,7 @@ public class PlaylistSwipeService {
 	public String likeTrack(User user, Long spotifyTrackId) {
 		Playlist defaultPlaylist = playlistService.getDefaultPlaylist(user.getId());
 		Track track = trackRepository.findBySpotifyTrackId(String.valueOf(spotifyTrackId))
-			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 트랙입니다."));
+			.orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
 
 		// 중복 체크
 		boolean trackExists = playlistTrackRepository.existsByPlaylistAndTrack(defaultPlaylist, track);
