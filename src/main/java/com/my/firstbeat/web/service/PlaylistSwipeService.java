@@ -52,17 +52,25 @@ public class PlaylistSwipeService {
 	 * 곡 스킵 (왼쪽 스와이프)
 	 */
 	@Transactional
-	public String skipTrack(User user, Long spotifyTrackId) {
-		Playlist defaultPlaylist = playlistService.getDefaultPlaylist(user.getId());
-		Track track = trackRepository.findBySpotifyTrackId(String.valueOf(spotifyTrackId))
-			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 트랙입니다."));
+	public String skipTrack (User user, Long spotifyTrackId) {
+		// 추천 트랙 리스트에서 트랙을 가져옴
+		TrackRecommendationResponse recommendation = recommendationService.getRecommendations(user.getId());
 
-		// 플레이리스트에서 곡 제거
-		PlaylistTrack playlistTrack = (PlaylistTrack)playlistTrackRepository.findByPlaylistAndTrack(defaultPlaylist, track)
-			.orElseThrow(() -> new IllegalArgumentException("해당 곡은 플레이리스트에 없습니다."));
-		playlistTrackRepository.delete(playlistTrack);
+		// 스킵할 트랙인지 확인
+		if (!recommendation.getSpotifyTrackId().equals(String.valueOf(spotifyTrackId))) {
+			throw new IllegalArgumentException("추천 트랙 목록에 존재하지 않는 트랙입니다.");
+		}
 
-		return "곡이 성공적으로 스킵되었습니다.";
+		// 추천 트랙 큐에서 해당 트랙을 제거
+		boolean removed = recommendationService.removeTrackFromRecommendations(user.getId(), spotifyTrackId);
+
+		if (!removed) {
+			throw new BusinessException(ErrorCode.RECOMMENDATION_TRACK_REMOVAL_FAILED);
+		}
+
+		log.info("추천 트랙이 성공적으로 스킵되었습니다. User ID: {}, Track ID: {}", user.getId(), spotifyTrackId);
+
+		return "추천 트랙이 성공적으로 스킵되었습니다.";
 	}
 }
 
