@@ -22,8 +22,15 @@ recommendation:
 
 lock:
   key_prefix: "recommendation:lock:"
-  wait_time: 3
-  lease_time: 10
+  wait_time: 5                    # 대기 시간
+  lease_time: 10                  # 점유 시간
+  max_attempts: 3                 # 최대 재시도 횟수
+  initial_back_off_ms: 1000       # 초기 대기 시간
+  back_off_multiplier: 2.0        # 백오프 승수
+  background:
+    max_attempts: 2
+    initial_back_off_ms: 500
+    back_off_multiplier: 2.0
 
 
 server:
