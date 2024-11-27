@@ -182,4 +182,14 @@ public class RecommendationService {
                 .map(Track::getSpotifyTrackId)
                 .collect(Collectors.joining(","));
     }
+
+	public boolean removeTrackFromRecommendations(Long userId, Long spotifyTrackId) {
+        Queue<TrackRecommendationResponse> recommendations =
+            recommendationsCache.get(userId, key -> new ConcurrentLinkedQueue<>());
+
+        // 큐에서 해당 트랙 제거
+        return recommendations.removeIf(
+            recommendation -> recommendation.getSpotifyTrackId().equals(String.valueOf(spotifyTrackId))
+        );
+    }
 }
