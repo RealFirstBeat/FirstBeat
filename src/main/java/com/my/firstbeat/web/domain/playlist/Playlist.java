@@ -3,14 +3,13 @@ package com.my.firstbeat.web.domain.playlist;
 import com.my.firstbeat.web.domain.base.BaseEntity;
 import com.my.firstbeat.web.domain.user.User;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Playlist extends BaseEntity {
 
     @Id
