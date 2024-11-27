@@ -2,8 +2,7 @@ package com.my.firstbeat.web.controller.track;
 
 import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
-import com.my.firstbeat.web.service.RecommendationService;
-import com.my.firstbeat.web.service.TrackService;
+import com.my.firstbeat.web.service.recommemdation.RecommendationService;
 import com.my.firstbeat.web.util.api.ApiResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

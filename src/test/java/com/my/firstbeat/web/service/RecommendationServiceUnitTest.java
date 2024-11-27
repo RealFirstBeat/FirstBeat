@@ -1,10 +1,8 @@
 package com.my.firstbeat.web.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.my.firstbeat.client.spotify.SpotifyClient;
 import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
-import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
 import com.my.firstbeat.web.domain.genre.Genre;
 import com.my.firstbeat.web.domain.genre.GenreRepository;
@@ -15,7 +13,7 @@ import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.dummy.DummyObject;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
-import jakarta.persistence.SqlResultSetMapping;
+import com.my.firstbeat.web.service.recommemdation.RecommendationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,13 +30,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse.*;
-import static com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse.TrackResponse.builder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
