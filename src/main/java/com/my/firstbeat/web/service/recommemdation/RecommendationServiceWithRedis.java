@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -48,17 +47,11 @@ public class RecommendationServiceWithRedis {
 
     private final Map<Long, ReentrantLock> userLocks = new ConcurrentHashMap<>(); // 유저별 락
 
-    private static final String RECOMMENDATION_KEY_PREFIX = "recommendation:user:";
-    private static final int REFRESH_THRESHOLD = 5;
-    private static final int RECOMMENDATIONS_SIZE = 20;
-    private static final int MAX_ATTEMPTS = 20;
-    private static final int SEED_MAX = 5;
-
-    private static final long CACHE_TTL_HOURS = 24;
+    private final RecommendationProperties properties;
 
     public TrackRecommendationResponse getRecommendations(Long userId) {
         User user = userService.findByIdOrFail(userId);
-        String redisKey = RECOMMENDATION_KEY_PREFIX + userId;
+        String redisKey = properties.getRedis().getKeyPrefix() + userId;
 
 
         //락 획득 전 반환할게 있다면 빠른 반환 시도
@@ -71,7 +64,7 @@ public class RecommendationServiceWithRedis {
         // 락을 획득해서 반환 시작
         ReentrantLock userLock = userLocks.computeIfAbsent(userId, key -> new ReentrantLock());
 
-        for(int attempts = 1; attempts <= MAX_ATTEMPTS; attempts++) {
+        for(int attempts = 1; attempts <= properties.getMaxAttempts(); attempts++) {
             userLock.lock();
             try {
                 if(needsRefresh(redisKey)) {
@@ -103,7 +96,7 @@ public class RecommendationServiceWithRedis {
             String seedTracks = getSeedTracks(user);
 
             RecommendationResponse spotifyRecommendations =
-                    spotifyClient.getRecommendations(seedTracks, seedGenres, RECOMMENDATIONS_SIZE);
+                    spotifyClient.getRecommendations(seedTracks, seedGenres, properties.getSeedMax());
 
             ListOperations<String, Object> listOps = redisTemplate.opsForList();
 
@@ -113,7 +106,7 @@ public class RecommendationServiceWithRedis {
                     .forEach(track -> listOps.rightPush(redisKey, track));
 
             //24시간 후 만료
-            redisTemplate.expire(redisKey, CACHE_TTL_HOURS, TimeUnit.HOURS);
+            redisTemplate.expire(redisKey, properties.getRedis().getCacheTtlHours(), TimeUnit.HOURS);
         } catch (SpotifyApiException e){
             log.error("Spotify API 호출 실패 - 유저 ID: {}, 원인: {}", user.getId(), e.getMessage(), e);
             throw e;
@@ -130,7 +123,7 @@ public class RecommendationServiceWithRedis {
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
 
-        Set<String> keys = redisTemplate.keys(RECOMMENDATION_KEY_PREFIX + "*");
+        Set<String> keys = redisTemplate.keys(properties.getRedis().getKeyPrefix() + "*");
         if(keys.isEmpty()){
             return;
         }
@@ -143,7 +136,7 @@ public class RecommendationServiceWithRedis {
 
         refreshKeys
                 .forEach(key -> {
-                    Long userId = Long.parseLong(key.replace(RECOMMENDATION_KEY_PREFIX, ""));
+                    Long userId = Long.parseLong(key.replace(properties.getRedis().getKeyPrefix(), ""));
                     ReentrantLock userLock = userLocks.computeIfAbsent(userId, k -> new ReentrantLock());
                     boolean locked = false;
 
@@ -170,18 +163,18 @@ public class RecommendationServiceWithRedis {
     //userLock 클린업
     @Scheduled(fixedRate = 1, timeUnit = TimeUnit.HOURS)
     private void cleanupUserLocks(){
-        Set<String> keys = redisTemplate.keys(RECOMMENDATION_KEY_PREFIX + "*");
-        userLocks.keySet().removeIf(userId -> !keys.contains(RECOMMENDATION_KEY_PREFIX + userId));
+        Set<String> keys = redisTemplate.keys(properties.getRedis().getKeyPrefix() + "*");
+        userLocks.keySet().removeIf(userId -> !keys.contains(properties.getRedis().getKeyPrefix() + userId));
     }
 
     public boolean needsRefresh(String redisKey) {
         Long size = redisTemplate.opsForList().size(redisKey);
-        return size == null || size <= REFRESH_THRESHOLD;
+        return size == null || size <= properties.getRefreshThreshold();
     }
 
 
     private String getSeedGenres(User user){
-        String seedGenres = genreRepository.findTop5GenresByUser(user, PageRequest.of(0, SEED_MAX))
+        String seedGenres = genreRepository.findTop5GenresByUser(user, PageRequest.of(0, properties.getSeedMax()))
                 .stream()
                 .map(Genre::getName)
                 .collect(Collectors.joining(","));
@@ -193,9 +186,9 @@ public class RecommendationServiceWithRedis {
 
 
     private String getSeedTracks(User user){
-        List<Track> trackList = playlistRepository.findAllTrackByUser(user, PageRequest.of(0, SEED_MAX));
+        List<Track> trackList = playlistRepository.findAllTrackByUser(user, PageRequest.of(0, properties.getSeedMax()));
         return trackList.stream()
-                .limit(SEED_MAX)
+                .limit(properties.getSeedMax())
                 .map(Track::getSpotifyTrackId)
                 .collect(Collectors.joining(","));
     }

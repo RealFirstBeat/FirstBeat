@@ -11,6 +11,14 @@ spotify:
   token:
     refresh-buffer-seconds: 300 #5분
 
+recommendation:
+  refresh_threshold: 5
+  size: 20
+  max_attempts: 20
+  seed_max: 5
+  redis:
+    key_prefix: "recommendation:user:"
+    cache_ttl_hours: 24
 
 
 server:
