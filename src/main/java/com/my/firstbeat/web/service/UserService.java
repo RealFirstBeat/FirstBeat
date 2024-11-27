@@ -1,6 +1,5 @@
 package com.my.firstbeat.web.service;
 
-import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.controller.user.dto.request.UpdateMyPageRequest;
 import com.my.firstbeat.web.controller.user.dto.response.GetMyPageResponse;
 import com.my.firstbeat.web.controller.user.dto.response.UpdateMyPageResponse;
