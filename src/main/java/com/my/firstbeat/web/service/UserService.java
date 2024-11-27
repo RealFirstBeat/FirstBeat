@@ -8,7 +8,6 @@ import com.my.firstbeat.web.domain.genre.Genre;
 import com.my.firstbeat.web.domain.genre.GenreRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
-import com.my.firstbeat.web.controller.user.dto.response.MyPageResponse;
 import com.my.firstbeat.web.domain.userGenre.UserGenre;
 import com.my.firstbeat.web.domain.userGenre.UserGenreRepository;
 import com.my.firstbeat.web.ex.BusinessException;
