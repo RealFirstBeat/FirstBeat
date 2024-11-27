@@ -14,7 +14,6 @@ import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
 import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
-import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
 
@@ -43,7 +42,7 @@ public class PlaylistSwipeService {
 		// 중복 체크
 		boolean trackExists = playlistTrackRepository.existsByPlaylistAndTrack(defaultPlaylist, track);
 		if (trackExists) {
-			return "곡이 이미 플레이리스트에 존재합니다.";
+			throw new BusinessException(ErrorCode.DUPLICATE_PLAYLIST_TITLE);
 		}
 
 		// 곡 추가
@@ -62,10 +61,10 @@ public class PlaylistSwipeService {
 
 		// 스킵할 트랙인지 확인
 		if (!recommendation.getSpotifyTrackId().equals(String.valueOf(spotifyTrackId))) {
-			throw new IllegalArgumentException("추천 트랙 목록에 존재하지 않는 트랙입니다.");
+			throw new BusinessException(ErrorCode.NO_NEW_RECOMMENDATIONS_AVAILABLE);
 		}
 
-		// 추천 트랙 큐에서 해당 트랙을 제거
+		// 추천 트랙에서 해당 트랙을 제거
 		boolean removed = recommendationService.removeTrackFromRecommendations(user.getId(), spotifyTrackId);
 
 		if (!removed) {
