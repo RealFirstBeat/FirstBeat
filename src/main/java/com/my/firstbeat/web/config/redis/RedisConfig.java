@@ -1,4 +1,4 @@
-package com.my.firstbeat.web.config.cache;
+package com.my.firstbeat.web.config.redis;
 
 import org.hibernate.boot.internal.StandardEntityNotFoundDelegate;
 import org.springframework.beans.factory.annotation.Value;
