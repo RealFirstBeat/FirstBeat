@@ -4,7 +4,7 @@ import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.util.api.ApiError;
 import com.my.firstbeat.web.util.api.ApiResult;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.exception.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -57,13 +57,15 @@ public class GlobalExceptionHandler {
     }
 
 
-        //TODO 쿼리 파라미터 객체로 받는 경우 생긴다면 추가하기
-//    @ExceptionHandler(ConstraintViolationException.class)
-//    public ResponseEntity<ApiResult<Map<String, String>>> queryParameterValidationException(ConstraintViolationException e) {
-//        Map<String, String> errorMap = new HashMap<>();
-//        e.getConstraintViolations().forEach(error ->
-//                errorMap.put(((PathImpl) (error.getPropertyPath())).getLeafNode().getName(), error.getMessage()));
-//        return new ResponseEntity<>(ApiResult.error(HttpStatus.BAD_REQUEST.value(), "유효성 검사 실패", errorMap), HttpStatus.BAD_REQUEST);
-//    }
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResult<Map<String, String>>> queryParameterValidationException(ConstraintViolationException e) {
+        Map<String, String> errorMap = new HashMap<>();
+        e.getConstraintViolations().forEach(error -> {
+            String propertyPath = error.getPropertyPath().toString();
+            String fieldName = propertyPath.substring(propertyPath.lastIndexOf('.') + 1);
+            errorMap.put(fieldName, error.getMessage());
+        });
+        return new ResponseEntity<>(ApiResult.error(HttpStatus.BAD_REQUEST.value(), "유효성 검사 실패", errorMap), HttpStatus.BAD_REQUEST);
+    }
 
 }
