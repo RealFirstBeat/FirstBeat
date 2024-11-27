@@ -1,12 +1,30 @@
 package com.my.firstbeat.web.service;
 
 import com.my.firstbeat.client.spotify.SpotifyClient;
+import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
 import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
 import com.my.firstbeat.client.spotify.ex.SpotifyApiException;
+import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
+import com.my.firstbeat.web.domain.genre.Genre;
+import com.my.firstbeat.web.domain.genre.GenreRepository;
+import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
+import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
+import com.my.firstbeat.web.domain.track.Track;
+import com.my.firstbeat.web.domain.track.TrackRepository;
+import com.my.firstbeat.web.domain.user.User;
+import com.my.firstbeat.web.domain.userGenre.UserGenreRepository;
+import com.my.firstbeat.web.ex.BusinessException;
+import com.my.firstbeat.web.ex.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -15,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class TrackService {
 
     private final SpotifyClient spotifyClient;
-
 
     public TrackSearchResponse searchTrackList(String genre){
         try {
@@ -31,4 +48,6 @@ public class TrackService {
             throw e;
         }
     }
+
+
 }

@@ -1,5 +1,6 @@
 package com.my.firstbeat.client.spotify;
 
+import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
 import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
 import com.my.firstbeat.client.spotify.ex.SpotifyApiException;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.specification.Paging;
+import se.michaelthelin.spotify.model_objects.specification.Recommendations;
 import se.michaelthelin.spotify.model_objects.specification.Track;
 
 import java.io.IOException;
@@ -42,6 +44,22 @@ public class SpotifyClient {
                     .execute();
             log.debug("Spotify API 호출 완료 - getGenreList, size: {}", genres.length);
             return genres;
+        });
+    }
+
+    //추천 트랙 리스트 조회
+    public RecommendationResponse getRecommendations(String seedTracks, String seedGenres, int limit){
+        return executeWithValidToken(() -> {
+            Recommendations recommendations = spotifyApi.getRecommendations()
+                    .limit(limit)
+                    .target_popularity(50)
+                    .min_popularity(20)
+                    .max_popularity(100)
+                    .seed_genres(seedGenres)
+                    .seed_tracks(seedTracks)
+                    .build()
+                    .execute();
+            return new RecommendationResponse(recommendations);
         });
     }
 

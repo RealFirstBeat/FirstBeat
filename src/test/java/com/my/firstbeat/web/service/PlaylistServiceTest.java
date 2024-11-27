@@ -8,30 +8,31 @@ import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.dummy.DummyObject;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +54,8 @@ class PlaylistServiceTest extends DummyObject {
 	void setUp() {
 		MockitoAnnotations.openMocks(this); // Mock 객체 초기화
 	}
+
+
 
     @Test
     @DisplayName("플레이리스트 생성: 정상")
@@ -88,82 +91,124 @@ class PlaylistServiceTest extends DummyObject {
         assertThrows(BusinessException.class, () -> playlistService.createPlaylist(mockUser, request));
     }
 
-	@Test
-	@DisplayName("디폴트 플레이리스트가 없으면 생성")
-	void getOrCreateDefaultPlaylist_success_WithNewDefaultPlaylist() {
-		// Given
-		Long userId = 1L;
-		User user = new User(userId, "test@example.com", "Test User", "password", null);
+    @Test
+    @DisplayName("내가 만든 플레이리스트 조회: 성공")
+    void getMyPlaylists_success() {
+        // Given
+        User mockUser = mockUserWithId(1L);
+        Pageable pageable = PageRequest.of(0, 10);
 
-		when(playlistRepository.findByUserIdAndIsDefault(userId, true)).thenReturn(Optional.empty());
-		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-		when(playlistRepository.save(any(Playlist.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        List<Playlist> mockPlaylists = List.of(
+                new Playlist("My Playlists 1", "Playlist 1", mockUser),
+                new Playlist("My Playlists 2", "Playlist 2", mockUser)
+        );
+        Page<Playlist> mockPage = new PageImpl<>(mockPlaylists, pageable, mockPlaylists.size());
+        Mockito.when(playlistRepository.findByUserId(mockUser.getId(), pageable)).thenReturn(mockPage);
 
-		// When
-		Playlist result = playlistService.getOrCreateDefaultPlaylist(userId);
+        // When
+        Page<PlaylistRetrieveResponse> result = playlistService.getMyPlaylists(mockUser.getId(), pageable);
 
-		// Then
-		assertAll(
-			() -> assertNotNull(result),
-			() -> assertTrue(result.isDefault()),
-			() -> assertEquals("제목없음", result.getTitle())
-		);
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.getTotalElements());
+        assertEquals("My Playlists 1", result.getContent().get(0).getTitle());
+        assertEquals("My Playlists 2", result.getContent().get(1).getTitle());
+        Mockito.verify(playlistRepository).findByUserId(mockUser.getId(), pageable);
+    }
 
-		verify(playlistRepository).save(any(Playlist.class));
-	}
+    @Test
+    @DisplayName("내가 만든 플레이리스트 조회: 존재하지 않는 경우")
+    void getMyPlaylists_isEmpty() {
+        // Given
+        User mockUser = mockUserWithId(1L);
+        Pageable pageable = PageRequest.of(0, 10);
+        Mockito.when(playlistRepository.findByUserId(mockUser.getId(), pageable)).thenReturn(Page.empty());
 
-	@Test
-	@DisplayName("디폴트 플레이리스트가 이미 존재")
-	void getOrCreateDefaultPlaylist_shouldReturnExistingDefaultPlaylist() {
-		// Given
-		Long userId = 1L;
-		User user = User.builder()
-			.id(userId)
-			.email("test@example.com")
-			.name("Test User")
-			.password("password")
-			.role(Role.USER)
-			.build();
-		Playlist existingPlaylist = new Playlist(user, "제목없음", "기본 설명", true);
+        // When & Then
+        BusinessException e = assertThrows(
+                BusinessException.class, () -> playlistService.getMyPlaylists(mockUser.getId(), pageable)
+        );
 
-		when(playlistRepository.findByUserIdAndIsDefault(userId, true))
-			.thenReturn(Optional.of(existingPlaylist));
+        assertEquals(ErrorCode.PLAYLIST_NOT_FOUND, e.getErrorCode());
+        Mockito.verify(playlistRepository).findByUserId(mockUser.getId(), pageable);
+    }
 
-		// When
-		Playlist result = playlistService.getOrCreateDefaultPlaylist(userId);
+    @Test
+    @DisplayName("디폴트 플레이리스트가 없으면 생성")
+    void getOrCreateDefaultPlaylist_success_WithNewDefaultPlaylist() {
+        // Given
+        Long userId = 1L;
+        User user = new User(userId, "test@example.com", "Test User", "password", null);
 
-		// Then
-		assertNotNull(result);
-		assertTrue(result.isDefault());
-		assertEquals("제목없음", result.getTitle());
-		verify(playlistRepository, never()).save(any());
-	}
+        when(playlistRepository.findByUserIdAndIsDefault(userId, true)).thenReturn(Optional.empty());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(playlistRepository.save(any(Playlist.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-	@Test
-	@DisplayName("디폴트 플레이리스트 변경 성공")
-	void changeDefaultPlaylist_success_WithValidPlaylistId() {
-		// Given
-		Long userId = 1L;
-		Long newPlaylistId = 2L;
+        // When
+        Playlist result = playlistService.getOrCreateDefaultPlaylist(userId);
 
-		User mockUser = mock(User.class); // Mock User 객체 생성
-		Playlist currentDefault = new Playlist(mockUser, "현재 디폴트", "기존 설명", true);
-		Playlist newDefault = new Playlist(mockUser, "새로운 디폴트", "새로운 설명", false);
+        // Then
+        assertAll(
+                () -> assertNotNull(result),
+                () -> assertTrue(result.isDefault()),
+                () -> assertEquals("제목없음", result.getTitle())
+        );
 
-		when(playlistRepository.findByUserIdAndIsDefault(userId, true)).thenReturn(Optional.of(currentDefault));
-		when(playlistRepository.findById(newPlaylistId)).thenReturn(Optional.of(newDefault));
+        verify(playlistRepository).save(any(Playlist.class));
+    }
 
-		// When
-		playlistService.changeDefaultPlaylist(userId, newPlaylistId);
+    @Test
+    @DisplayName("디폴트 플레이리스트가 이미 존재")
+    void getOrCreateDefaultPlaylist_shouldReturnExistingDefaultPlaylist() {
+        // Given
+        Long userId = 1L;
+        User user = User.builder()
+                .id(userId)
+                .email("test@example.com")
+                .name("Test User")
+                .password("password")
+                .role(Role.USER)
+                .build();
+        Playlist existingPlaylist = new Playlist(user, "제목없음", "기본 설명", true);
 
-		// Then
-		assertAll(
-			() -> assertFalse(currentDefault.isDefault()),
-			() -> assertTrue(newDefault.isDefault())
-		);
-		verify(playlistRepository).save(currentDefault);
-		verify(playlistRepository).save(newDefault);
-	}
+        when(playlistRepository.findByUserIdAndIsDefault(userId, true))
+                .thenReturn(Optional.of(existingPlaylist));
+
+        // When
+        Playlist result = playlistService.getOrCreateDefaultPlaylist(userId);
+
+        // Then
+        assertNotNull(result);
+        assertTrue(result.isDefault());
+        assertEquals("제목없음", result.getTitle());
+        verify(playlistRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("디폴트 플레이리스트 변경 성공")
+    void changeDefaultPlaylist_success_WithValidPlaylistId() {
+        // Given
+        Long userId = 1L;
+        Long newPlaylistId = 2L;
+
+        User mockUser = mock(User.class); // Mock User 객체 생성
+        Playlist currentDefault = new Playlist(mockUser, "현재 디폴트", "기존 설명", true);
+        Playlist newDefault = new Playlist(mockUser, "새로운 디폴트", "새로운 설명", false);
+
+        when(playlistRepository.findByUserIdAndIsDefault(userId, true)).thenReturn(Optional.of(currentDefault));
+        when(playlistRepository.findById(newPlaylistId)).thenReturn(Optional.of(newDefault));
+
+        // When
+        playlistService.changeDefaultPlaylist(userId, newPlaylistId);
+
+        // Then
+        assertAll(
+                () -> assertFalse(currentDefault.isDefault()),
+                () -> assertTrue(newDefault.isDefault())
+        );
+        verify(playlistRepository).save(currentDefault);
+        verify(playlistRepository).save(newDefault);
+    }
 
 
 	@Test

@@ -4,10 +4,11 @@ import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
+import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.service.PlaylistService;
 import com.my.firstbeat.web.util.api.ApiResult;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Range;
@@ -15,10 +16,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import com.my.firstbeat.web.config.security.loginuser.LoginUser;
-import com.my.firstbeat.web.domain.playlist.Playlist;
-import com.my.firstbeat.web.service.PlaylistService;
-import com.my.firstbeat.web.util.api.ApiResult;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+
 
 @RestController
 @RequestMapping("/api/v1/playlist")
@@ -28,6 +30,7 @@ public class PlaylistController {
 
     private final PlaylistService playlistService;
 
+    // 플레이리스트 생성
     @PostMapping
     public ResponseEntity<ApiResult<PlaylistCreateResponse>> createPlaylist(
             @AuthenticationPrincipal LoginUser loginUser,
@@ -35,15 +38,22 @@ public class PlaylistController {
         return ResponseEntity.ok(ApiResult.success(playlistService.createPlaylist(loginUser.getUser(), request)));
     }
 
-	// 디폴트 플레이리스트 가져오기 또는 생성
-	@GetMapping("/default")
-	public ResponseEntity<ApiResult<Playlist>> getDefaultPlaylist(
-		@AuthenticationPrincipal LoginUser user) {
+    // 내가 만든 플레이리스트 조회: 최신순 정렬, 페이징
+    @GetMapping("/me")
+    public ResponseEntity<ApiResult<Page<PlaylistRetrieveResponse>>> getMyPlaylists(
+            @AuthenticationPrincipal LoginUser loginUser,
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(ApiResult.success(playlistService.getMyPlaylists(loginUser.getUser().getId(), pageable)));
+    }
 
-		// 현재 로그인한 사용자의 디폴트 플레이리스트 가져오기 또는 생성
-		Playlist defaultPlaylist = playlistService.getOrCreateDefaultPlaylist(user.getUser().getId());
-		return ResponseEntity.ok(ApiResult.success(defaultPlaylist));
-	}
+    // 디폴트 플레이리스트 가져오기 또는 생성
+    @GetMapping("/default")
+    public ResponseEntity<ApiResult<Playlist>> getDefaultPlaylist(
+            @AuthenticationPrincipal LoginUser user) {
+        // 현재 로그인한 사용자의 디폴트 플레이리스트 가져오기 또는 생성
+        Playlist defaultPlaylist = playlistService.getOrCreateDefaultPlaylist(user.getUser().getId());
+        return ResponseEntity.ok(ApiResult.success(defaultPlaylist));
+    }
 
 	// 디폴트 플레이리스트 변경
 	@PutMapping("/{playlistId}/default/")
@@ -61,4 +71,5 @@ public class PlaylistController {
 		    @RequestParam(value = "size", defaultValue = "10", required = false) @Range(min = 1, max = 100, message = "페이지 크기는 1에서 100 사이여야 합니다") int size) {
 		return ResponseEntity.ok(ApiResult.success(playlistService.getTrackList(playlistId, page, size)));
 	}
+
 }
