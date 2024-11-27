@@ -14,7 +14,7 @@ public enum ErrorCode {
     MAX_RECOMMENDATION_ATTEMPTS_EXCEED("일시적으로 추천 서비스를 이용할 수 없습니다. 잠시 후 다시 시도해주세요", HttpStatus.CONFLICT.value()),
     PLAYLIST_NOT_FOUND("플레이리스트가 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
 
-    ;
+    SERVICE_TEMPORARY_UNAVAILABLE("추천 서비스가 일시적으로 혼잡합니다. 잠시 후 다시 시도해주세요", HttpStatus.SERVICE_UNAVAILABLE.value());
 
     private final String message;
     private final int status;

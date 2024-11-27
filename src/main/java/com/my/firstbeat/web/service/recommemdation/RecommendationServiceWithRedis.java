@@ -13,21 +13,21 @@ import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
 import com.my.firstbeat.web.service.UserService;
+import com.my.firstbeat.web.service.recommemdation.lock.RedisLockManager;
 import com.my.firstbeat.web.service.recommemdation.property.RecommendationProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -44,9 +44,7 @@ public class RecommendationServiceWithRedis {
     private final PlaylistRepository playlistRepository;
     private final TrackRepository trackRepository;
     private final RedisTemplate<String, Object> redisTemplate;
-
-    private final Map<Long, ReentrantLock> userLocks = new ConcurrentHashMap<>(); // 유저별 락
-
+    private final RedisLockManager lockManager;
     private final RecommendationProperties properties;
 
     public TrackRecommendationResponse getRecommendations(Long userId) {
@@ -62,28 +60,22 @@ public class RecommendationServiceWithRedis {
 
         // 빠르게 반환할 추천 트랙이 없고, 빠르게 반환될 수 있는 트랙이 사용자의 플레이리스트에 있다면
         // 락을 획득해서 반환 시작
-        ReentrantLock userLock = userLocks.computeIfAbsent(userId, key -> new ReentrantLock());
-
-        for(int attempts = 1; attempts <= properties.getMaxAttempts(); attempts++) {
-            userLock.lock();
-            try {
+        return lockManager.executeWithLockWithRetry(userId, () -> {
+            for(int attempts = 1; attempts <= properties.getMaxAttempts(); attempts++) {
                 if(needsRefresh(redisKey)) {
                     refreshRecommendations(user, redisKey);
                 }
-            } finally {
-                userLock.unlock();
+                TrackRecommendationResponse recommendation = popRecommendation(redisKey);
+                if(recommendation == null) {
+                    throw new BusinessException(ErrorCode.FAIL_TO_GET_RECOMMENDATION);
+                }
+                if(!trackRepository.existsInUserPlaylist(user, recommendation.getSpotifyTrackId())) {
+                    return recommendation;
+                }
+                log.debug("유저: {}의 플레이리스트에 추천 트랙: {} 존재. 추천 재시도: {}", user.getId(), recommendation.getSpotifyTrackId(), attempts);
             }
-            TrackRecommendationResponse recommendation = popRecommendation(redisKey);
-            if(recommendation == null) {
-                throw new BusinessException(ErrorCode.FAIL_TO_GET_RECOMMENDATION);
-            }
-            if(!trackRepository.existsInUserPlaylist(user, recommendation.getSpotifyTrackId())) {
-                return recommendation;
-            }
-            log.debug("유저: {}의 플레이리스트에 추천 트랙: {} 존재. 추천 재시도: {}", user.getId(), recommendation.getSpotifyTrackId(), attempts);
-        }
-
-        throw new BusinessException(ErrorCode.MAX_RECOMMENDATION_ATTEMPTS_EXCEED);
+            throw new BusinessException(ErrorCode.MAX_RECOMMENDATION_ATTEMPTS_EXCEED);
+        }).orElseThrow(() -> new BusinessException(ErrorCode.SERVICE_TEMPORARY_UNAVAILABLE)); //대기 시간 내 락을 획득하지 못하면 서비스 혼잡 오류 throw
     }
 
     private TrackRecommendationResponse popRecommendation(String redisKey) {
@@ -122,49 +114,82 @@ public class RecommendationServiceWithRedis {
     public void backgroundRefresh(){
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
+        List<String> refreshKeys = new ArrayList<>();
 
-        Set<String> keys = redisTemplate.keys(properties.getRedis().getKeyPrefix() + "*");
-        if(keys.isEmpty()){
+        ScanOptions scanOptions = ScanOptions.scanOptions()
+                .match(properties.getRedis().getKeyPrefix() + "*")
+                .count(100)
+                .build();
+        Cursor<String> cursor = redisTemplate.scan(scanOptions);
+
+        try{
+            while(cursor.hasNext()){
+                String key = cursor.next();
+                if(needsRefresh(key)){
+                    refreshKeys.add(key);
+                }
+            }
+        } finally {
+            cursor.close();
+        }
+
+        if (refreshKeys.isEmpty()) {
+            log.info("갱신이 필요한 추천 트랙이 없습니다.");
             return;
         }
 
-        List<String> refreshKeys = keys.stream()
-                .filter(this::needsRefresh)
-                .toList();
-
         log.info("추천 트랙 갱신 백그라운드 리프레시 시작 - 대상 유저 수: {}", refreshKeys.size());
 
-        refreshKeys
-                .forEach(key -> {
+        // 갱신 작업 병렬 처리
+        int threadPoolSize = Math.min(refreshKeys.size(), 10);
+        ExecutorService executorService = Executors.newFixedThreadPool(threadPoolSize);
+        CountDownLatch latch = new CountDownLatch(refreshKeys.size());
+
+        refreshKeys.forEach(key -> {
+            executorService.submit(() -> {
+                try{
                     Long userId = Long.parseLong(key.replace(properties.getRedis().getKeyPrefix(), ""));
-                    ReentrantLock userLock = userLocks.computeIfAbsent(userId, k -> new ReentrantLock());
-                    boolean locked = false;
+                    processRefresh(userId, key, successCount, failCount);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        });
 
-                    try{
-                        locked = userLock.tryLock(1000, TimeUnit.MILLISECONDS);
-                        if(locked){
-                            User user = userService.findByIdOrFail(userId);
-                            refreshRecommendations(user, key);
-                            successCount.incrementAndGet();
-                        }
-                    } catch (Exception e){
-                        failCount.incrementAndGet();
-                        log.error("백그라운드 추천 트랙 갱신 작업 실패 - 유저 ID: {}, 원인: {}", userId, e.getMessage(), e);
-                    }finally {
-                        if(locked){
-                            userLock.unlock();
-                        }
-                    }
-                });
-
+        try{
+            boolean completed = latch.await(30, TimeUnit.MINUTES);
+            if(!completed){
+                log.warn("일부 추천 트랙 갱신 작업이 제한 시간 내에 완료되지 않았습니다");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("추천 트랙 백그라운드 갱신 작업이 중단되었습니다: {}", e.getMessage(), e);
+        } finally {
+            executorService.shutdown();
+        }
         log.info("추천 트랙 갱신 백그라운드 리프레시 완료 - 성공: {}, 실패: {}", successCount.get(), failCount.get());
     }
 
-    //userLock 클린업
-    @Scheduled(fixedRate = 1, timeUnit = TimeUnit.HOURS)
-    private void cleanupUserLocks(){
-        Set<String> keys = redisTemplate.keys(properties.getRedis().getKeyPrefix() + "*");
-        userLocks.keySet().removeIf(userId -> !keys.contains(properties.getRedis().getKeyPrefix() + userId));
+    private void processRefresh(Long userId, String redisKey, AtomicInteger successCount, AtomicInteger failCount){
+        try{
+            boolean isSuccess = lockManager.executeWithLockForBackground(userId, () -> {
+                User user = userService.findByIdOrFail(userId);
+                refreshRecommendations(user, redisKey);
+            });
+            if(isSuccess){
+                successCount.getAndIncrement();
+            } else {
+                failCount.getAndIncrement();
+                log.warn("유저 ID: {}의 추천 트랙 갱신 작업이 락 획득 실패로 건너뛰었습니다.", userId);
+            }
+        } catch (Exception e){
+            failCount.getAndIncrement();
+            if(e instanceof BusinessException){
+                log.warn("유저 ID: {}의 추천 트랙 갱신 중 비즈니스 예외 발생: {}", userId, e.getMessage());
+            } else{
+                log.error("유저 ID: {}의 추천 트랙 갱신 중 예기치 못한 오류 발생", userId, e);
+            }
+        }
     }
 
     public boolean needsRefresh(String redisKey) {
