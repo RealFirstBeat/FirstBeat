@@ -12,25 +12,27 @@ spotify:
     refresh-buffer-seconds: 300 #5분
 
 recommendation:
-  refresh_threshold: 5
+  refresh-threshold: 5
   size: 20
-  max_attempts: 20
-  seed_max: 5
+  max-attempts: 20
+  seed-max: 5
   redis:
-    key_prefix: "recommendation:user:"
-    cache_ttl_hours: 24
+    key-prefix: "recommendation:"
+    failed-tasks-key: "recommendation:failed-refresh"
+    cache-ttl-hours: 24
+    failed-tasks-ttl-hours: 24
 
 lock:
-  key_prefix: "recommendation:lock:"
-  wait_time: 5                    # 대기 시간
-  lease_time: 10                  # 점유 시간
-  max_attempts: 3                 # 최대 재시도 횟수
-  initial_back_off_ms: 1000       # 초기 대기 시간
-  back_off_multiplier: 2.0        # 백오프 승수
+  key-prefix: "recommendation:lock:"
+  wait-time: 5                    # 대기 시간
+  lease-time: 10                  # 점유 시간
+  max-attempts: 3                 # 최대 재시도 횟수
+  initial-back-off-ms: 1000       # 초기 대기 시간
+  back-off-multiplier: 2.0        # 백오프 승수
   background:
-    max_attempts: 2
-    initial_back_off_ms: 500
-    back_off_multiplier: 2.0
+    max-attempts: 2
+    initial-back-off-ms: 500
+    back_-ff-multiplier: 2.0
 
 async:
   recommendation:
