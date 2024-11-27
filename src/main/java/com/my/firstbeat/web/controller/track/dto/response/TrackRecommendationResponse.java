@@ -1,6 +1,5 @@
 package com.my.firstbeat.web.controller.track.dto.response;
 
-import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
