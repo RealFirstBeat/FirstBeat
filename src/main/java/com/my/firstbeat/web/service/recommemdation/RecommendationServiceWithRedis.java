@@ -15,6 +15,7 @@ import com.my.firstbeat.web.ex.ErrorCode;
 import com.my.firstbeat.web.service.UserService;
 import com.my.firstbeat.web.service.recommemdation.lock.RedisLockManager;
 import com.my.firstbeat.web.service.recommemdation.property.RecommendationProperties;
+import com.my.firstbeat.web.service.recommemdation.property.RecommendationRefreshTask;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -22,14 +23,11 @@ import org.springframework.data.redis.core.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +44,8 @@ public class RecommendationServiceWithRedis {
     private final RedisTemplate<String, Object> redisTemplate;
     private final RedisLockManager lockManager;
     private final RecommendationProperties properties;
+    private final ExecutorService recommendationBackgroundExecutor;
+    private final RedisTemplate<String, String> stringRedisTemplate;
 
     public TrackRecommendationResponse getRecommendations(Long userId) {
         User user = userService.findByIdOrFail(userId);
@@ -116,6 +116,15 @@ public class RecommendationServiceWithRedis {
         AtomicInteger failCount = new AtomicInteger(0);
         List<String> refreshKeys = new ArrayList<>();
 
+        //이전에 실패한 작업 먼저 가져오기
+        Set<String> failedTasks = stringRedisTemplate.opsForSet()
+                .members(properties.getRedis().getFailedTasksKey());
+
+        if(!failedTasks.isEmpty()){
+            log.info("이전 갱신 작업에서 실패한 {} 개의 작업을 먼저 처리합니다", failedTasks.size());
+            refreshKeys.addAll(failedTasks);
+        }
+
         ScanOptions scanOptions = ScanOptions.scanOptions()
                 .match(properties.getRedis().getKeyPrefix() + "*")
                 .count(100)
@@ -141,19 +150,19 @@ public class RecommendationServiceWithRedis {
         log.info("추천 트랙 갱신 백그라운드 리프레시 시작 - 대상 유저 수: {}", refreshKeys.size());
 
         // 갱신 작업 병렬 처리
-        int threadPoolSize = Math.min(refreshKeys.size(), 10);
-        ExecutorService executorService = Executors.newFixedThreadPool(threadPoolSize);
         CountDownLatch latch = new CountDownLatch(refreshKeys.size());
 
         refreshKeys.forEach(key -> {
-            executorService.submit(() -> {
-                try{
-                    Long userId = Long.parseLong(key.replace(properties.getRedis().getKeyPrefix(), ""));
-                    processRefresh(userId, key, successCount, failCount);
-                } finally {
-                    latch.countDown();
-                }
-            });
+            Long userId = Long.parseLong(key.replace(properties.getRedis().getKeyPrefix(), ""));
+            RecommendationRefreshTask task = new RecommendationRefreshTask(
+                    userId,
+                    key,
+                    successCount,
+                    failCount,
+                    latch,
+                    this
+            );
+            recommendationBackgroundExecutor.submit(task);
         });
 
         try{
@@ -164,13 +173,11 @@ public class RecommendationServiceWithRedis {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.error("추천 트랙 백그라운드 갱신 작업이 중단되었습니다: {}", e.getMessage(), e);
-        } finally {
-            executorService.shutdown();
         }
         log.info("추천 트랙 갱신 백그라운드 리프레시 완료 - 성공: {}, 실패: {}", successCount.get(), failCount.get());
     }
 
-    private void processRefresh(Long userId, String redisKey, AtomicInteger successCount, AtomicInteger failCount){
+    public void processRefresh(Long userId, String redisKey, AtomicInteger successCount, AtomicInteger failCount){
         try{
             boolean isSuccess = lockManager.executeWithLockForBackground(userId, () -> {
                 User user = userService.findByIdOrFail(userId);

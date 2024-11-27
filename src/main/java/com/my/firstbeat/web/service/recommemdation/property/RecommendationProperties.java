@@ -17,5 +17,7 @@ public class RecommendationProperties {
     public static class Redis {
         private String keyPrefix = "recommendation:user:";
         private long cacheTtlHours = 24;
+        private String failedTasksKey = "recommendation:failed-refresh";
+        private int failedTasksTtlHours = 24;
     }
 }
