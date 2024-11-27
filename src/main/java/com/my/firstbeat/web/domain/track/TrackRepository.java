@@ -17,5 +17,5 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
             "where p.user = :user and t.spotifyTrackId = :spotifyTrackId")
     boolean existsInUserPlaylist(@Param("user") User user, @Param("spotifyTrackId") String spotifyTrackId);
 
-    Optional<Track> findBySpotifyTrackId(Long spotifyTrackId);
+    Optional<Track> findBySpotifyTrackId(String spotifyTrackId);
 }
