@@ -51,7 +51,7 @@ public class DummyObject {
         List<UserGenre> userGenres = new ArrayList<>();
 
         Genre genre1 = Genre.builder().name("Rock").build();
-        Genre genre2 = Genre.builder().name("Jazz").build();
+        Genre genre2 = Genre.builder().name("Pop").build();
 
         UserGenre userGenre1 = UserGenre.builder().user(user).genre(genre1).build();
         UserGenre userGenre2 = UserGenre.builder().user(user).genre(genre2).build();
