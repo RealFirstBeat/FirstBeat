@@ -6,8 +6,6 @@ import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveRes
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.user.User;
-import com.my.firstbeat.web.domain.user.Role;
-import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.dummy.DummyObject;
 import com.my.firstbeat.web.ex.BusinessException;
