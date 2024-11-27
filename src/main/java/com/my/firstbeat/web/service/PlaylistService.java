@@ -46,10 +46,11 @@ public class PlaylistService {
         );
 
         Playlist savedPlaylist = playlistRepository.save(playlist);
-        log.debug("저장된 플레이리스트: {}", savedPlaylist.getTitle());
+        log.debug("Saved playlist: {}", savedPlaylist);
 
         return new PlaylistCreateResponse(savedPlaylist.getId(), savedPlaylist.getTitle(), savedPlaylist.getDescription());
     }
+
     // 내가 만든 플레이리스트 조회
     public Page<PlaylistRetrieveResponse> getMyPlaylists(Long userId, Pageable pageable) {
         Page<Playlist> playlists = playlistRepository.findByUserId(userId, pageable);
@@ -65,6 +66,7 @@ public class PlaylistService {
     }
 
     // 디폴트 플레이리스트 가져오기 또는 생성
+	@Transactional
     public Playlist getOrCreateDefaultPlaylist(Long userId) {
         // 디폴트 플레이리스트 검색
         Playlist defaultPlaylist = playlistRepository.findByUserIdAndIsDefault(userId, true)
@@ -85,6 +87,7 @@ public class PlaylistService {
     }
 
     //디폴트 플레이리스트 변경 로직
+	@Transactional
     public void changeDefaultPlaylist(Long userId, Long playlistId) {
         // 최소 한개는 default playlist 가 있다고 가정
         // 기존 유저의 dafault playlist 를 가져와서
@@ -124,5 +127,4 @@ public class PlaylistService {
 		return "곡이 디폴트 플레이리스트에 추가되었습니다.";
 	}
 }
-
 
