@@ -18,8 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,17 +70,35 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 이름 업데이트
-        if (request.getName() != null) {
-            user.setName(request.getName());
-            userRepository.save(user);
+        user.setName(request.getName());
+        userRepository.save(user);
+
+        // 현재 사용자의 장르 목록 조회
+        List<UserGenre> currentUserGenres = userGenreRepository.findByUserIdWithGenre(userId);
+        Set<String> currentGenreNames = currentUserGenres.stream()
+                .map(ug -> ug.getGenre().getName())
+                .collect(Collectors.toSet());
+
+        Set<String> requestedGenres = request.getFavoriteGenre();
+
+        // 삭제할 장르 식별 및 삭제
+        Set<String> genresToRemove = new HashSet<>(currentGenreNames);
+        genresToRemove.removeAll(requestedGenres);
+        if (!genresToRemove.isEmpty()) {
+            List<UserGenre> genresToDelete = currentUserGenres.stream()
+                    .filter(ug -> genresToRemove.contains(ug.getGenre().getName()))
+                    .collect(Collectors.toList());
+            userGenreRepository.deleteAll(genresToDelete);
         }
 
-        // 관심 장르 업데이트
-        if (request.getFavoriteGenre() != null && !request.getFavoriteGenre().isEmpty()) {
-            userGenreRepository.deleteByUserId(userId);
-
-            List<Genre> genres = genreRepository.findByNameIn(request.getFavoriteGenre());
-            for (Genre genre : genres) {
+        // 추가할 장르 식별 및 추가
+        Set<String> genresToAdd = new HashSet<>(requestedGenres);
+        genresToAdd.removeAll(currentGenreNames);
+        if (!genresToAdd.isEmpty()) {
+            Set<Long> genreIdsToAdd = genreRepository.findIdsByNames(genresToAdd);
+            List<Genre> genresToAddList = genreRepository.findAllById(genreIdsToAdd);
+            for (Genre genre : genresToAddList) {
+                log.info("genres: " + genre.getName());
                 UserGenre userGenre = UserGenre.builder()
                         .user(user)
                         .genre(genre)
@@ -90,7 +107,6 @@ public class UserService {
             }
         }
 
-        // 업데이트된 장르 조회
         List<UserGenre> updatedUserGenres = userGenreRepository.findByUserIdWithGenre(userId);
         Set<String> updatedGenres = updatedUserGenres.stream()
                 .map(userGenre -> userGenre.getGenre().getName())
