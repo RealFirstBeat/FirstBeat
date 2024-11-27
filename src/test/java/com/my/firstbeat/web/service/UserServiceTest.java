@@ -44,6 +44,13 @@ class UserServiceTest extends DummyObject {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+
+        // 더미 데이터 초기화
+        Genre jazz = Genre.builder().id(1L).name("Jazz").build();
+
+        // 장르 이름을 통해 장르 ID를 조회하도록 설정
+        when(genreRepository.findIdsByNames(Set.of("Jazz"))).thenReturn(Set.of(1L));
+        when(genreRepository.findAllById(Set.of(1L))).thenReturn(List.of(jazz));
     }
 
     @Test
@@ -59,10 +66,13 @@ class UserServiceTest extends DummyObject {
         // When
         GetMyPageResponse response = userService.getUserData(1L);
 
+
+        when(userGenreRepository.findByUserIdWithGenre(1L)).thenReturn(userGenres);
+
         // Then
         assertEquals("test name", response.getName());
         assertEquals("test1234@naver.com", response.getEmail());
-        assertEquals(List.of("Rock", "Jazz"), response.getGenres());
+        assertEquals(List.of("Rock", "Pop"), response.getGenres());
     }
 
     @Test
@@ -81,19 +91,33 @@ class UserServiceTest extends DummyObject {
     @DisplayName("마이페이지 수정 성공 테스트")
     void updateMyPage_Success() {
         // Given
-        User mockUser = mockUser();
+        User mockUser = mockUserWithId(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
 
         UpdateMyPageRequest request = new UpdateMyPageRequest();
         request.setName("updatedName");
-        request.setFavoriteGenre(List.of("Jazz", "Rock"));
+        request.setFavoriteGenre(Set.of("Jazz", "Rock"));
 
-        Genre jazz = Genre.builder().name("Jazz").build();
-        Genre rock = Genre.builder().name("Rock").build();
-        when(genreRepository.findByNameIn(List.of("Jazz", "Rock"))).thenReturn(List.of(jazz, rock));
+        List<UserGenre> existingUserGenres = mockUserGenres(mockUser);
+        when(userGenreRepository.findByUserIdWithGenre(1L)).thenReturn(existingUserGenres);
 
-        List<UserGenre> userGenres = mockUserGenres(mockUser);
-        when(userGenreRepository.findByUserIdWithGenre(1L)).thenReturn(userGenres);
+        Set<Long> genreIds = Set.of(1L, 2L);
+
+        Genre jazz = Genre.builder().id(1L).name("Jazz").build();
+        Genre rock = Genre.builder().id(2L).name("Rock").build();
+        when(genreRepository.findAllById(genreIds)).thenReturn(List.of(jazz, rock));
+
+        doAnswer(invocation -> {
+            UserGenre userGenre = invocation.getArgument(0);
+            existingUserGenres.removeIf(ug -> ug.getGenre().getName().equals("Pop")); // 기존 Pop 삭제
+            UserGenre builtUserGenre = UserGenre.builder()
+                    .id(userGenre.getGenre().getName().equals("Jazz") ? 1L : 2L)
+                    .user(userGenre.getUser())
+                    .genre(userGenre.getGenre())
+                    .build();
+            existingUserGenres.add(builtUserGenre); // 새로운 장르 추가
+            return builtUserGenre;
+        }).when(userGenreRepository).save(any(UserGenre.class));
 
         // When
         UpdateMyPageResponse response = userService.updateMyPage(1L, request);
@@ -105,8 +129,8 @@ class UserServiceTest extends DummyObject {
 
         // Verify
         verify(userRepository, times(1)).save(mockUser);
-        verify(userGenreRepository, times(1)).deleteByUserId(1L);
-        verify(userGenreRepository, times(1)).findByUserIdWithGenre(1L);
+        verify(userGenreRepository, times(1)).deleteAll(anyList());
+        verify(userGenreRepository, times(2)).findByUserIdWithGenre(1L);
     }
 
     @Test
