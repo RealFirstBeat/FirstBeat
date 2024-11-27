@@ -32,6 +32,13 @@ lock:
     initial_back_off_ms: 500
     back_off_multiplier: 2.0
 
+async:
+  recommendation:
+    core-pool-size: 5         # 스레드 풀이 항상 유지하는 기본 스레드 수
+    max-pool-size: 10         # 스레드 풀이 가질 수 있는 최대 스레드 수 -> 대기열 가득 찼을 때만 core-pool-size를 넘어 생성
+    queue-capacity: 100       # 작업 대기열 크기
+    keep-alive-seconds: 60    # 유휴 스레드 유지 시간
+
 
 server:
   port: 8080
