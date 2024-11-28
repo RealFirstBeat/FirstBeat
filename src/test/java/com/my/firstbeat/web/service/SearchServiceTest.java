@@ -32,9 +32,9 @@ class SearchServiceTest {
         List<String> topSearches = searchService.getTopSearches(3);
 
         // Then
-        assertEquals(3, topSearches.size());
-        assertEquals("Microservices", topSearches.get(0));
-        assertEquals("Spring Boot", topSearches.get(1));
-        assertEquals("Docker", topSearches.get(2));
+        assertEquals(3, topSearches.size(), "인기 검색어 리스트의 크기가 예상과 다릅니다.");
+        assertEquals("Microservices", topSearches.get(0), "가장 인기 있는 검색어가 예상과 다릅니다.");
+        assertEquals("Spring Boot", topSearches.get(1), "두 번째 인기 있는 검색어가 예상과 다릅니다.");
+        assertEquals("Docker", topSearches.get(2), "세 번째 인기 있는 검색어가 예상과 다릅니다.");
     }
 }

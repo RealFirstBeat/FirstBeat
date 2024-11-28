@@ -2,7 +2,10 @@ package com.my.firstbeat.web.controller.playlist;
 
 import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
-import com.my.firstbeat.web.controller.playlist.dto.response.*;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistsData;
+import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.service.PlaylistService;
 import com.my.firstbeat.web.util.api.ApiResult;
@@ -18,15 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -70,7 +64,7 @@ public class PlaylistController {
         return ResponseEntity.ok(ApiResult.success("디폴트 플레이리스트가 변경되었습니다."));
     }
 
-	@GetMapping("/{playlistId}")
+	@GetMapping("/v1/playlist/{playlistId}")
 	public ResponseEntity<ApiResult<TrackListResponse>> getTrackList(
 			@PathVariable(value = "playlistId") Long playlistId,
 		    @RequestParam(value = "page", defaultValue = "0", required = false) @PositiveOrZero int page,
@@ -84,29 +78,21 @@ public class PlaylistController {
             @RequestParam(value = "page", defaultValue = "0", required = false) @PositiveOrZero int page,
             @RequestParam(value = "size", defaultValue = "10", required = false) @Range(min = 1, max = 100, message = "페이지 크기는 1에서 100 사이여야 합니다") int size
     ) {
-
-        Page<Playlist> playlistPage = playlistService.searchPlaylists(query, page, size);
-
-        List<PlaylistSearchResponse> playlists = playlistPage.stream()
-                .map(playlist -> new PlaylistSearchResponse(
-                        playlist.getId(),
-                        playlist.getTitle(),
-                        playlist.getDescription(),
-                        playlist.getUser().getName()
-                ))
-                .collect(Collectors.toList());
-
-        PaginationInfo pagination = new PaginationInfo(
-                playlistPage.getNumber() + 1,
-                playlistPage.getSize(),
-                playlistPage.getTotalPages(),
-                (int) playlistPage.getTotalElements()
-        );
-
-        return ResponseEntity.ok(ApiResult.success(new PlaylistsData(playlists, pagination)));
+        PlaylistsData playlistsData = playlistService.getPlaylistsData(query, page, size);
+        return ResponseEntity.ok(ApiResult.success(playlistsData));
     }
 
-    @DeleteMapping("{playlistId}")
+    @GetMapping("/playlist")
+    public ResponseEntity<ApiResult<PlaylistsData>> getPlaylistsWithInMemoryCache(
+            @RequestParam(defaultValue = "") String query,
+            @RequestParam(value = "page", defaultValue = "0", required = false) @PositiveOrZero int page,
+            @RequestParam(value = "size", defaultValue = "10", required = false) @Range(min = 1, max = 100, message = "페이지 크기는 1에서 100 사이여야 합니다") int size
+    ) {
+        PlaylistsData playlistsData = playlistService.getPlaylistsDataWithCache(query, page, size);
+        return ResponseEntity.ok(ApiResult.success(playlistsData));
+    }
+
+    @DeleteMapping("/v1/playlist{playlistId}")
     public ResponseEntity<ApiResult<String>> deletePlaylist(
             @PathVariable Long playlistId,
             @AuthenticationPrincipal LoginUser user) {
