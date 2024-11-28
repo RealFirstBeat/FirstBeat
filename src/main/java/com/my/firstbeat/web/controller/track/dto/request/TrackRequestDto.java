@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 public class TrackRequestDto {
 
 	@NotNull(message = "Spotify Track ID는 필수입니다.")
-	private Long spotifyTrackId;
+	private String spotifyTrackId;
 }

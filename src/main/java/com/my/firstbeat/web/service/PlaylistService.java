@@ -5,8 +5,6 @@ import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateRespo
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
-import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
-import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.ex.BusinessException;
@@ -26,8 +24,6 @@ public class PlaylistService {
 
     private final PlaylistRepository playlistRepository;
     private final UserRepository userRepository;
-    private final PlaylistTrackRepository playlistTrackRepository;
-	private final TrackRepository trackRepository;
 
     // 플레이리스트 생성
     @Transactional

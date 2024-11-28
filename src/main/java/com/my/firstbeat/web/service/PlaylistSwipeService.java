@@ -34,9 +34,9 @@ public class PlaylistSwipeService {
 	 * 좋아요 (오른쪽 스와이프)
 	 */
 	@Transactional
-	public String likeTrack(User user, Long spotifyTrackId) {
+	public String likeTrack(User user, String spotifyTrackId) {
 		Playlist defaultPlaylist = playlistService.getDefaultPlaylist(user.getId());
-		Track track = trackRepository.findBySpotifyTrackId(String.valueOf(spotifyTrackId))
+		Track track = trackRepository.findBySpotifyTrackId(spotifyTrackId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
 
 		// 중복 체크
@@ -55,12 +55,12 @@ public class PlaylistSwipeService {
 	 * 곡 스킵 (왼쪽 스와이프)
 	 */
 	@Transactional
-	public String skipTrack (User user, Long spotifyTrackId) {
+	public String skipTrack (User user, String spotifyTrackId) {
 		// 추천 트랙 리스트에서 트랙을 가져옴
 		TrackRecommendationResponse recommendation = recommendationService.getRecommendations(user.getId());
 
 		// 스킵할 트랙인지 확인
-		if (!recommendation.getSpotifyTrackId().equals(String.valueOf(spotifyTrackId))) {
+		if (!recommendation.getSpotifyTrackId().equals(spotifyTrackId)) {
 			throw new BusinessException(ErrorCode.NO_NEW_RECOMMENDATIONS_AVAILABLE);
 		}
 
