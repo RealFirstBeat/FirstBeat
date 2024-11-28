@@ -2,8 +2,8 @@ package com.my.firstbeat.web.service;
 
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
-import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.track.Track;
@@ -20,6 +20,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 
 @Service
@@ -29,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PlaylistService {
 
     private final PlaylistRepository playlistRepository;
-    private final UserRepository userRepository;
+  	private final UserRepository userRepository;
     private final TrackRepository trackRepository;
     private final SearchService searchService;
 
@@ -137,6 +139,27 @@ public class PlaylistService {
         }
         Pageable pageable = PageRequest.of(page, size);
         return playlistRepository.findByTitleContaining(query, pageable);
+    }
+
+    @Transactional
+    public void deletePlaylist(Long userId, Long playlistId) {
+        // Playlist 존재 여부 확인
+        Playlist playlist = playlistRepository.findById(playlistId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
+
+        // Playlist의 소유자 검증
+        if (!playlist.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND); // 소유자가 아님
+        }
+
+        // Default Playlist인지 확인
+        if (playlist.isDefault()) {
+            throw new BusinessException(ErrorCode.CAN_NOT_DELETE_DEFAULT_PLAYLIST); // 디폴트 플레이리스트는 삭제 불가
+        }
+
+        // 삭제
+        playlistRepository.delete(playlist);
+        log.info("플레이리스트가 삭제되었습니다.", playlistId);
     }
 }
 

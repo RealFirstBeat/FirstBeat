@@ -43,8 +43,7 @@ public class UserService {
         String email = signupRequestDto.getEmail();
 
         // 이메일 중복 확인
-        Optional<User> checkEmail = userRepository.findByEmail(email);
-        if (checkEmail.isPresent()) {
+        if (userRepository.existsByEmail(email)) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
         }
 
@@ -56,7 +55,7 @@ public class UserService {
 
         // 장르 검증
         if (genreNames.size() < 3) {
-            throw new BusinessException(ErrorCode.INVALID_GENRES);
+            throw new BusinessException(ErrorCode.CHOOSE_AT_LEAST_THREE_GENRE);
         }
 
 

@@ -1,6 +1,8 @@
 package com.my.firstbeat.web.controller.user.dto.request;
 
 import com.my.firstbeat.web.controller.user.dto.valid.ValidPassword;
+import com.my.firstbeat.web.ex.BusinessException;
+import com.my.firstbeat.web.ex.ErrorCode;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -36,4 +38,13 @@ public class SignupRequestDto {
 
     @Size(min = 3, message = "장르를 반드시 3개 이상 선택해주세요.")
     private List<String> genreNames;
+
+    private List<String> genreIds; // 장르 ID 리스트
+
+    public void validateGenres() {
+        if (genreIds == null || genreIds.size() < 3) {
+            throw new BusinessException(ErrorCode.CHOOSE_AT_LEAST_THREE_GENRE);
+        }
+    }
+
 }
