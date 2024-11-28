@@ -18,12 +18,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1/playlist")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Validated
 public class PlaylistController {
@@ -64,13 +70,13 @@ public class PlaylistController {
         return ResponseEntity.ok(ApiResult.success("디폴트 플레이리스트가 변경되었습니다."));
     }
 
-    @GetMapping("/{playlistId}")
-    public ResponseEntity<ApiResult<TrackListResponse>> getTrackList(
-            @PathVariable(value = "playlistId") Long playlistId,
-            @RequestParam(value = "page", defaultValue = "0", required = false) @PositiveOrZero int page,
-            @RequestParam(value = "size", defaultValue = "10", required = false) @Range(min = 1, max = 100, message = "페이지 크기는 1에서 100 사이여야 합니다") int size) {
-        return ResponseEntity.ok(ApiResult.success(playlistService.getTrackList(playlistId, page, size)));
-    }
+	@GetMapping("/{playlistId}")
+	public ResponseEntity<ApiResult<TrackListResponse>> getTrackList(
+			@PathVariable(value = "playlistId") Long playlistId,
+		    @RequestParam(value = "page", defaultValue = "0", required = false) @PositiveOrZero int page,
+		    @RequestParam(value = "size", defaultValue = "10", required = false) @Range(min = 1, max = 100, message = "페이지 크기는 1에서 100 사이여야 합니다") int size) {
+		return ResponseEntity.ok(ApiResult.success(playlistService.getTrackList(playlistId, page, size)));
+	}
 
     @GetMapping("/v1/playlist")
     public ResponseEntity<ApiResult<PlaylistsData>> getPlaylists(
@@ -98,5 +104,15 @@ public class PlaylistController {
         );
 
         return ResponseEntity.ok(ApiResult.success(new PlaylistsData(playlists, pagination)));
+    }
+
+    @DeleteMapping("{playlistId}")
+    public ResponseEntity<ApiResult<String>> deletePlaylist(
+            @PathVariable Long playlistId,
+            @AuthenticationPrincipal LoginUser user) {
+        // 현재 로그인한 사용자와 Playlist ID를 서비스로 전달
+        playlistService.deletePlaylist(user.getUser().getId(), playlistId);
+        // 성공 응답 반환
+        return ResponseEntity.ok(ApiResult.success("플레이리스트가 삭제되었습니다."));
     }
 }

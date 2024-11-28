@@ -1,10 +1,12 @@
 package com.my.firstbeat.web.service;
 
+import com.my.firstbeat.web.controller.user.dto.request.SignupRequestDto;
 import com.my.firstbeat.web.controller.user.dto.request.UpdateMyPageRequest;
 import com.my.firstbeat.web.controller.user.dto.response.GetMyPageResponse;
 import com.my.firstbeat.web.controller.user.dto.response.UpdateMyPageResponse;
 import com.my.firstbeat.web.domain.genre.Genre;
 import com.my.firstbeat.web.domain.genre.GenreRepository;
+import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.domain.userGenre.UserGenre;
@@ -13,10 +15,14 @@ import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,8 +33,45 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserGenreRepository userGenreRepository;
+    private final PasswordEncoder passwordEncoder;
     private final GenreRepository genreRepository; // GenreRepository 추가
 
+    @Transactional
+    public String signup(SignupRequestDto signupRequestDto) {
+        String name = signupRequestDto.getName();
+        String password = passwordEncoder.encode(signupRequestDto.getPassword());
+        String email = signupRequestDto.getEmail();
+
+        // 이메일 중복 확인
+        if (userRepository.existsByEmail(email)) {
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+        }
+
+        Role role = Role.USER;
+        User user = new User(email, name, password, role);
+
+        // 선택된 장르 이름 가져오기
+        List<String> genreNames = signupRequestDto.getGenreNames();
+
+
+        List<Genre> genres = genreNames.stream()
+                .map(n -> genreRepository.findByName(n)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_GENRES)))
+                .toList();
+
+
+        // UserGenre 매핑 저장
+        for (Genre genre : genres) {
+            UserGenre userGenre = UserGenre.builder()
+                    .user(user)
+                    .genre(genre)
+                    .build();
+            userGenreRepository.save(userGenre);
+        }
+
+        userRepository.save(user);
+        return "회원가입이 정상적으로 처리되었습니다.";
+    }
 
     public User findByIdOrFail(Long id) {
         return userRepository.findById(id)
