@@ -1,6 +1,7 @@
 package com.my.firstbeat.web.controller.user;
 
 import com.my.firstbeat.web.config.security.loginuser.LoginUser;
+import com.my.firstbeat.web.controller.user.dto.request.SignupRequestDto;
 import com.my.firstbeat.web.controller.user.dto.request.UpdateMyPageRequest;
 import com.my.firstbeat.web.controller.user.dto.response.GetMyPageResponse;
 import com.my.firstbeat.web.controller.user.dto.response.UpdateMyPageResponse;
@@ -14,12 +15,18 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api/v1")
 public class UserController {
 
     private final UserService userService;
 
-    @GetMapping("/mypage")
+    @PostMapping("/auth/register")
+    public ResponseEntity<ApiResult> signup(@Valid @RequestBody SignupRequestDto signupRequestDto) {
+        String message = userService.signup(signupRequestDto);
+        return ResponseEntity.ok(ApiResult.success(message));
+    }
+
+    @GetMapping("/users/mypage")
     public ResponseEntity<ApiResult<GetMyPageResponse>> getMyPage(@AuthenticationPrincipal LoginUser loginUser) {
         Long userId = loginUser.getUser().getId();
 
@@ -28,7 +35,7 @@ public class UserController {
         return ResponseEntity.ok(ApiResult.success(response));
     }
 
-    @PatchMapping("/mypage")
+    @PatchMapping("/users/mypage")
     public ResponseEntity<ApiResult<UpdateMyPageResponse>> updateMyPage(
             @AuthenticationPrincipal LoginUser loginUser,
             @RequestBody @Valid UpdateMyPageRequest request) {

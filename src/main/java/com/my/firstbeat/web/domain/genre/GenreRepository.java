@@ -9,7 +9,12 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.Set;
 import java.util.List;
 
+import java.util.Optional;
+
 public interface GenreRepository extends JpaRepository<Genre, Long> {
+
+    Optional<Genre> findByName(String name);
+
     @Query("SELECT g.id FROM Genre g WHERE g.name IN :names")
     Set<Long> findIdsByNames(@Param("names") Set<String> names);
 
