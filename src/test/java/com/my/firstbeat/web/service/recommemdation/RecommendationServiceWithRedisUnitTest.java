@@ -16,6 +16,7 @@ import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
 import com.my.firstbeat.web.service.UserService;
 import com.my.firstbeat.web.service.recommemdation.lock.RedisLockManager;
+import com.my.firstbeat.web.service.recommemdation.property.LockProperties;
 import com.my.firstbeat.web.service.recommemdation.property.RecommendationProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,14 +26,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.*;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.util.ReflectionTestUtils;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -71,8 +75,10 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
     private RecommendationServiceWithRedis recommendationService;
 
     private RecommendationProperties properties;
+
     private User testUser;
     private static final String REDIS_KEY = "recommendation:user:1";
+    private static final String FAILED_KEY = "recommendation:failed-refresh";
 
     @BeforeEach
     void setUp() {
@@ -81,8 +87,19 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
         properties.setRefreshThreshold(5);
         properties.getRedis().setKeyPrefix("recommendation:user:");
         properties.getRedis().setCacheTtlHours(24);
-
+        properties.getRedis().setFailedTasksKey("recommendation:failed-refresh");
         ReflectionTestUtils.setField(recommendationService, "properties", properties);
+
+
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setThreadNamePrefix("test-recommendation-refresh-");
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(1);
+        executor.setQueueCapacity(100);
+        executor.initialize();
+        ReflectionTestUtils.setField(recommendationService, "recommendationBackgroundExecutor",
+                executor.getThreadPoolExecutor());
+
 
         testUser = mockUserWithId();
 
@@ -273,6 +290,74 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
         assertThatThrownBy(() -> recommendationService.getRecommendations(testUser.getId()))
                 .isInstanceOf(SpotifyApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", com.my.firstbeat.client.spotify.ex.ErrorCode.API_ERROR);
+    }
+
+    @Test
+    @DisplayName("추천 트랙 반환: 락 획득 실패시 서비스 혼잡 예외 발생")
+    void getRecommendations_should_throw_exception_when_fail_to_acquire_lock() {
+        when(userService.findByIdOrFail(testUser.getId())).thenReturn(testUser);
+        when(redisTemplate.opsForList().size(REDIS_KEY)).thenReturn(5L);
+        when(lockManager.executeWithLockWithRetry(eq(testUser.getId()), any()))
+                .thenReturn(Optional.empty()); // 락 획득에 실패
+
+        assertThatThrownBy(() -> recommendationService.getRecommendations(testUser.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SERVICE_TEMPORARY_UNAVAILABLE);
+    }
+
+
+    @Test
+    @DisplayName("백그라운드 갱신: 실패한 작업 재시도 성공")
+    void backgroundRefresh_should_retry_failed_tasks_successfully() {
+        List<TrackResponse> tracks = IntStream.range(0, 20)
+                .mapToObj(i -> TrackResponse.builder()
+                        .id("spotifyId: "+i)
+                        .name("spotify name: "+i)
+                        .trackName("track: "+i)
+                        .artists(new TrackResponse.ArtistResponse("nct wish"))
+                        .build())
+                .collect(Collectors.toList());
+
+        RecommendationResponse recommendations = new RecommendationResponse();
+        recommendations.setTracks(tracks);
+
+        SetOperations<String, Object> setOperations = mock(SetOperations.class);
+        when(redisTemplate.opsForSet()).thenReturn(setOperations);
+
+        //실패한 작업
+        Set<Object> failedTasks = Set.of(testUser.getId().toString());
+        when(redisTemplate.opsForSet().members(FAILED_KEY)).thenReturn(failedTasks);
+
+        Cursor<String> cursor = mock(Cursor.class);
+        when(cursor.hasNext()).thenReturn(false);
+        when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
+
+        when(userService.findByIdOrFail(testUser.getId())).thenReturn(testUser);
+        when(lockManager.executeWithLockForBackground(eq(testUser.getId()), any()))
+                .thenAnswer(invocation -> {
+                    Runnable runnable = invocation.getArgument(1);
+                    runnable.run();
+                    return true;
+                });
+        when(genreRepository.findTop5GenresByUser(any(), any())).thenReturn(
+                List.of(new Genre("pop"), new Genre("k-pop")));
+        when(playlistRepository.findAllTrackByUser(any(), any(Pageable.class)))
+                .thenReturn(List.of(Track.builder().spotifyTrackId("test1").build(),
+                        Track.builder().spotifyTrackId("test2").build()));
+        when(spotifyClient.getRecommendations(anyString(), anyString(), anyInt()))
+                .thenReturn(recommendations);
+
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        recommendationService.backgroundRefresh();
+
+        verify(lockManager).executeWithLockForBackground(eq(testUser.getId()), any());
+        verify(redisTemplate.opsForSet()).members(FAILED_KEY);
+        verify(spotifyClient).getRecommendations(anyString(), anyString(), anyInt());
+        verify(genreRepository).findTop5GenresByUser(any(), any());
+        verify(playlistRepository).findAllTrackByUser(any(), any(Pageable.class));
+        verify(redisTemplate.opsForList(), times(20)).rightPush(eq(REDIS_KEY), any());
     }
 
 
