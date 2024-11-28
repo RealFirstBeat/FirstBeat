@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PlaylistService {
 
     private final PlaylistRepository playlistRepository;
-    private final UserRepository userRepository;
+  	private final UserRepository userRepository;
     private final TrackRepository trackRepository;
     private final PlaylistTrackRepository playlistTrackRepository;
 
@@ -123,6 +123,11 @@ public class PlaylistService {
         // 새로운 defalut를 세팅
         newDefaultPlaylist.updateDefault(true);
         playlistRepository.save(newDefaultPlaylist);
+    }
+
+    public Page<Playlist> searchPlaylists(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return playlistRepository.findByTitleContaining(query, pageable);
     }
 
     //플레이리스트 곡 단건 삭제 에 관련된 로직
