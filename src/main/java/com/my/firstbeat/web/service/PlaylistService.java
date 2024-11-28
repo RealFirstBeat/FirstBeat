@@ -5,9 +5,7 @@ import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateRespo
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
-import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrack;
 import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
-import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
@@ -75,7 +73,7 @@ public class PlaylistService {
         // 디폴트 플레이리스트가 없으면 생성
         if (defaultPlaylist == null) {
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
             defaultPlaylist = playlistRepository.save(new Playlist(
                     user,
                     "제목없음",
@@ -98,33 +96,16 @@ public class PlaylistService {
 
         // 파라미터로 넘어온 playlist id 가 진짜 존재하는지 확인
         Playlist newDefaultPlaylist = playlistRepository.findById(playlistId)
-                .orElseThrow(() -> new IllegalArgumentException("플레이리스트가 존재하지 않습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
 
-        // 새로운 defalut를 세팅
+        // 새로운 default 를 세팅
         newDefaultPlaylist.updateDefault(true);
         playlistRepository.save(newDefaultPlaylist);
     }
+
 	public Playlist getDefaultPlaylist(Long userId) {
 		return playlistRepository.findByUserIdAndIsDefault(userId, true)
-			.orElseThrow(() -> new IllegalArgumentException("디폴트 플레이리스트가 존재하지 않습니다."));
-	}
-
-	@Transactional
-	public String addTrackToDefaultPlaylist(User user, Long spotifyTrackId) {
-		Playlist defaultPlaylist = getDefaultPlaylist(user.getId()); // 디폴트 플레이리스트 가져오기
-
-		Track track = trackRepository.findById(spotifyTrackId)
-			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 트랙 ID입니다: " + spotifyTrackId));
-
-		boolean exists = playlistTrackRepository.existsByPlaylistAndTrack(defaultPlaylist, track);
-		if (exists) {
-			return "곡이 이미 디폴트 플레이리스트에 존재합니다.";
-		}
-
-		PlaylistTrack newTrack = new PlaylistTrack(defaultPlaylist, track);
-		playlistTrackRepository.save(newTrack);
-
-		return "곡이 디폴트 플레이리스트에 추가되었습니다.";
+			.orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
 	}
 }
 
