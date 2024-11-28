@@ -51,9 +51,22 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 
+    //Redisson
+    implementation 'org.redisson:redisson-spring-boot-starter:3.17.6'
+
+    //shedLock
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-redis-spring:5.10.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-spring:5.10.0'
+
+
+
 
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+compileJava {
+    options.compilerArgs << '-parameters'
 }

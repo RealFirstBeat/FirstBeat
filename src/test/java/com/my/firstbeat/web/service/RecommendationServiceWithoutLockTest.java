@@ -12,6 +12,8 @@ import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.dummy.DummyObject;
+import com.my.firstbeat.web.service.recommemdation.RecommendationServiceWithoutLock;
+import com.my.firstbeat.web.service.recommemdation.property.RecommendationProperties;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -58,6 +60,9 @@ class RecommendationServiceWithoutLockTest extends DummyObject {
 
     @MockBean
     private PlaylistRepository playlistRepository;
+
+    @MockBean
+    private RecommendationProperties properties;
 
     private User testUser;
 

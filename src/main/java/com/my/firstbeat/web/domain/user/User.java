@@ -6,6 +6,7 @@ import lombok.*;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "users")
 @AllArgsConstructor
@@ -29,6 +30,13 @@ public class User extends BaseEntity {
     public User(Long id, String email, Role role) {
         this.id = id;
         this.email = email;
+        this.role = role;
+    }
+
+    public User(String email, String name, String password, Role role) {
+        this.email = email;
+        this.name = name;
+        this.password = password;
         this.role = role;
     }
 
