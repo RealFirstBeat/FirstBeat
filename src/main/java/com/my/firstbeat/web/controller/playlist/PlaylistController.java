@@ -103,6 +103,38 @@ public class PlaylistController {
                 (int) playlistPage.getTotalElements()
         );
 
+
+
+        return ResponseEntity.ok(ApiResult.success(new PlaylistsData(playlists, pagination)));
+    }
+
+    @GetMapping("/v2/playlist")
+    public ResponseEntity<ApiResult<PlaylistsData>> getPlaylistsWithInMemoryCache(
+            @RequestParam(defaultValue = "") String query,
+            @RequestParam(value = "page", defaultValue = "0", required = false) @PositiveOrZero int page,
+            @RequestParam(value = "size", defaultValue = "10", required = false) @Range(min = 1, max = 100, message = "페이지 크기는 1에서 100 사이여야 합니다") int size
+    ) {
+
+        Page<Playlist> playlistPage = playlistService.searchPlaylistsWithInMemoryCache(query, page, size);
+
+        List<PlaylistSearchResponse> playlists = playlistPage.stream()
+                .map(playlist -> new PlaylistSearchResponse(
+                        playlist.getId(),
+                        playlist.getTitle(),
+                        playlist.getDescription(),
+                        playlist.getUser().getName()
+                ))
+                .collect(Collectors.toList());
+
+        PaginationInfo pagination = new PaginationInfo(
+                playlistPage.getNumber() + 1,
+                playlistPage.getSize(),
+                playlistPage.getTotalPages(),
+                (int) playlistPage.getTotalElements()
+        );
+
+
+
         return ResponseEntity.ok(ApiResult.success(new PlaylistsData(playlists, pagination)));
     }
 
