@@ -133,6 +133,7 @@ public class RecommendationServiceWithRedis {
             log.info("이전 갱신 작업에서 실패한 {} 개의 작업을 먼저 처리합니다", failedTasks.size());
             failedTasks.stream()
                     .map(Object::toString)
+                    .map(userId -> toRedisKey(Long.parseLong(userId)))
                     .forEach(refreshKeys::add);
         }
 
