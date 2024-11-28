@@ -1,7 +1,9 @@
 package com.my.firstbeat.web.service;
 
+import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistDeleteResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
@@ -53,11 +55,6 @@ class PlaylistServiceTest extends DummyObject {
 
 	@Mock
 	private PlaylistTrackRepository playlistTrackRepository;
-  
-  	@BeforeEach
-	void setUp() {
-		MockitoAnnotations.openMocks(this); // Mock 객체 초기화
-	}
 
 
 
@@ -307,8 +304,81 @@ class PlaylistServiceTest extends DummyObject {
 		verify(trackRepository).findAllByPlaylist(any(), any());
 	}
 
+	@Test
+	@DisplayName("플레이리스트 트랙 삭제 성공")
+	void deleteTrackFromPlaylist_success() {
+		// Given
+		Long playlistId = 1L;
+		Long trackId = 100L;
+		Long userId = 10L;
 
+		User mockUser = mockUserWithId(userId);
+		LoginUser loginUser = new LoginUser(mockUser);
 
+		Playlist playlist = mockPlaylist(playlistId, mockUser);
+		Track track = mockTrack(trackId);
 
+		// Mock 설정
+		when(playlistRepository.findByIdAndUserId(eq(playlistId), eq(userId)))
+			.thenReturn(Optional.of(playlist));
+		when(trackRepository.findById(eq(trackId)))
+			.thenReturn(Optional.of(track));
+
+		// When
+		PlaylistDeleteResponse response = playlistService.deleteTrackFromPlaylist(loginUser, playlistId, trackId);
+
+		// Then
+		assertNotNull(response);
+		assertEquals(playlistId, response.getPlaylistId());
+		assertEquals(trackId, response.getTrackId());
+		assertEquals("해당 트랙이 플레이리스트에서 삭제되었습니다.", response.getMessage());
+
+		verify(playlistTrackRepository).deleteByPlaylistAndTrack(eq(playlist), eq(track));
+	}
+
+	@Test
+	@DisplayName("플레이리스트 트랙 삭제 실패 - 플레이리스트 없음")
+	void deleteTrackFromPlaylist_playlistNotFound() {
+		// Given
+		Long playlistId = 1L;
+		Long userId = 10L;
+		LoginUser loginUser = new LoginUser(mockUserWithId(userId));
+
+		// Mock 설정
+		when(playlistRepository.findByIdAndUserId(eq(playlistId), eq(userId)))
+			.thenReturn(Optional.empty());
+
+		// When & Then
+		BusinessException exception = assertThrows(BusinessException.class, () ->
+			playlistService.deleteTrackFromPlaylist(loginUser, playlistId, 100L));
+
+		assertEquals(ErrorCode.PLAYLIST_NOT_FOUND, exception.getErrorCode());
+	}
+
+	@Test
+	@DisplayName("플레이리스트 트랙 삭제 실패 - 트랙 없음")
+	void deleteTrackFromPlaylist_trackNotFound() {
+		// Given
+		Long playlistId = 1L;
+		Long trackId = 100L;
+		Long userId = 10L;
+
+		User mockUser = mockUserWithId(userId);
+		LoginUser loginUser = new LoginUser(mockUser);
+
+		Playlist playlist = mockPlaylist(playlistId, mockUser);
+
+		// Mock 설정
+		when(playlistRepository.findByIdAndUserId(eq(playlistId), eq(userId)))
+			.thenReturn(Optional.of(playlist));
+		when(trackRepository.findById(eq(trackId)))
+			.thenReturn(Optional.empty());
+
+		// When & Then
+		BusinessException exception = assertThrows(BusinessException.class, () ->
+			playlistService.deleteTrackFromPlaylist(loginUser, playlistId, trackId));
+
+		assertEquals(ErrorCode.TRACK_NOT_FOUND, exception.getErrorCode());
+	}
 }
 

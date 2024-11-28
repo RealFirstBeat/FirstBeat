@@ -1,6 +1,8 @@
 package com.my.firstbeat.web.dummy;
 
 import com.my.firstbeat.web.domain.genre.Genre;
+import com.my.firstbeat.web.domain.playlist.Playlist;
+import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.userGenre.UserGenre;
@@ -60,5 +62,23 @@ public class DummyObject {
         userGenres.add(userGenre2);
 
         return userGenres;
+    }
+
+    protected Playlist mockPlaylist(Long id, User user) {
+        return Playlist.builder()
+            .id(id)
+            .user(user)
+            .title("Test Playlist " + id)
+            .description("Test Description")
+            .build();
+    }
+
+    protected Track mockTrack(Long id) {
+        return Track.builder()
+            .id(id)
+            .name("Test Track " + id)
+            .albumCoverUrl("http://test.com/album" + id)
+            .artistName("Artist " + id)
+            .build();
     }
 }
