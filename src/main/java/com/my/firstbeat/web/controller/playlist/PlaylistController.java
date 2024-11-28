@@ -73,7 +73,7 @@ public class PlaylistController {
     }
 
     @GetMapping("/v1/playlist")
-    public ApiResult<PlaylistsData> getPlaylists(
+    public ResponseEntity<ApiResult<PlaylistsData>> getPlaylists(
             @RequestParam(defaultValue = "") String query,
             @RequestParam(value = "page", defaultValue = "0", required = false) @PositiveOrZero int page,
             @RequestParam(value = "size", defaultValue = "10", required = false) @Range(min = 1, max = 100, message = "페이지 크기는 1에서 100 사이여야 합니다") int size
@@ -97,6 +97,6 @@ public class PlaylistController {
                 (int) playlistPage.getTotalElements()
         );
 
-        return ApiResult.success(new PlaylistsData(playlists, pagination));
+        return ResponseEntity.ok(ApiResult.success(new PlaylistsData(playlists, pagination)));
     }
 }
