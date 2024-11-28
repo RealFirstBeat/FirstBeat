@@ -48,7 +48,7 @@ public class RecommendationServiceWithRedis {
 
     public TrackRecommendationResponse getRecommendations(Long userId) {
         User user = userService.findByIdOrFail(userId);
-        String redisKey = properties.getRedis().getKeyPrefix() + userId;
+        String redisKey = toRedisKey(userId);
 
         //먼저 임계치 기반으로 트랙 갱신해야 하는지 확인
         refreshIfNeeded(user, redisKey);
@@ -164,7 +164,7 @@ public class RecommendationServiceWithRedis {
         CountDownLatch latch = new CountDownLatch(refreshKeys.size());
 
         refreshKeys.forEach(key -> {
-            Long userId = Long.parseLong(key.replace(properties.getRedis().getKeyPrefix(), ""));
+            Long userId = extractUserId(key);
             RecommendationRefreshTask task = new RecommendationRefreshTask(
                     userId,
                     key,
@@ -213,6 +213,14 @@ public class RecommendationServiceWithRedis {
     public boolean needsRefresh(String redisKey) {
         Long size = redisTemplate.opsForList().size(redisKey);
         return size == null || size <= properties.getRefreshThreshold();
+    }
+
+    private Long extractUserId(String redisKey) {
+        return Long.parseLong(redisKey.replace(properties.getRedis().getKeyPrefix(), ""));
+    }
+
+    private String toRedisKey(Long userId) {
+        return properties.getRedis().getKeyPrefix() + userId;
     }
 
 
