@@ -50,6 +50,15 @@ public class RecommendationServiceWithRedis {
         User user = userService.findByIdOrFail(userId);
         String redisKey = properties.getRedis().getKeyPrefix() + userId;
 
+        //먼저 임계치 기반으로 트랙 갱신해야 하는지 확인
+        if(needsRefresh(redisKey)){
+            lockManager.executeWithLockWithRetry(userId, () -> {
+                if(needsRefresh(redisKey)){
+                    refreshRecommendations(user, redisKey);
+                }
+                return null;
+            }).orElseThrow(() -> new BusinessException(ErrorCode.SERVICE_TEMPORARY_UNAVAILABLE));
+        }
 
         //락 획득 전 반환할게 있다면 빠른 반환 시도
         TrackRecommendationResponse quickTry = popRecommendation(redisKey);
