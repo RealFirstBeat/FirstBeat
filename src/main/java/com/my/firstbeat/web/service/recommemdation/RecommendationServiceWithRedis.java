@@ -191,16 +191,27 @@ public class RecommendationServiceWithRedis {
 
     public void processRefresh(Long userId, String redisKey, AtomicInteger successCount, AtomicInteger failCount){
         try{
+            User user;
+            try {
+                user = userService.findByIdOrFail(userId);
+            } catch (BusinessException e) {
+                failCount.getAndIncrement();
+                log.warn("유저 ID: {}의 추천 트랙 갱신을 건너뜁니다. 사유: {}", userId, e.getMessage());
+                return;
+            }
+
             boolean isSuccess = lockManager.executeWithLockForBackground(userId, () -> {
-                User user = userService.findByIdOrFail(userId);
                 refreshRecommendations(user, redisKey);
             });
             if(isSuccess){
                 successCount.getAndIncrement();
             } else {
                 failCount.getAndIncrement();
-                log.warn("유저 ID: {}의 추천 트랙 갱신 작업이 락 획득 실패로 건너뛰었습니다.", userId);
+                log.warn("유저 ID: {}의 추천 트랙 갱신 작업이 락 획득 실패로 건너뛰었습니다", userId);
             }
+        } catch (SpotifyApiException e){
+            failCount.getAndIncrement();
+            log.error("Spotify API 호출 실패 - 유저 ID: {}, 원인: {}", userId, e.getMessage(), e);
         } catch (Exception e){
             failCount.getAndIncrement();
             if(e instanceof BusinessException){
