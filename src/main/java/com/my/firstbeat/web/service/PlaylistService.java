@@ -7,6 +7,7 @@ import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistDeleteRespo
 import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
@@ -24,6 +25,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 
 @Service
@@ -142,6 +145,27 @@ public class PlaylistService {
         }
         Pageable pageable = PageRequest.of(page, size);
         return playlistRepository.findByTitleContaining(query, pageable);
+    }
+
+    @Transactional
+    public void deletePlaylist(Long userId, Long playlistId) {
+        // Playlist 존재 여부 확인
+        Playlist playlist = playlistRepository.findById(playlistId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
+
+        // Playlist의 소유자 검증
+        if (!playlist.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND); // 소유자가 아님
+        }
+
+        // Default Playlist인지 확인
+        if (playlist.isDefault()) {
+            throw new BusinessException(ErrorCode.CAN_NOT_DELETE_DEFAULT_PLAYLIST); // 디폴트 플레이리스트는 삭제 불가
+        }
+
+        // 삭제
+        playlistRepository.delete(playlist);
+        log.info("플레이리스트가 삭제되었습니다.", playlistId);
     }
 
     //플레이리스트 곡 단건 삭제 에 관련된 로직

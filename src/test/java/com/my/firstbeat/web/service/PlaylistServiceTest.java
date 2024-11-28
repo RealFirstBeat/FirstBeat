@@ -254,7 +254,7 @@ class PlaylistServiceTest extends DummyObject {
 			  pageable,
 			  2
 	  );
-		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository, searchService, playlistTrackRepository);
+		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository, playlistTrackRepository, searchService);
 		PlaylistService spyService = spy(realService);
 
 		doReturn(playlist).when(spyService).findByIdOrFail(playlistId);
@@ -275,7 +275,7 @@ class PlaylistServiceTest extends DummyObject {
 	@DisplayName("플레이리스트 내 추천 트랙 반환: 존재하지 않는 플레이리스트 조회 시 예외 발생")
 	void getTrackList_PlaylistNotFound() {
 		Long playlistId = 999L;
-		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository, searchService, playlistTrackRepository);
+		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository, playlistTrackRepository,searchService);
 		PlaylistService spyService = spy(realService);
 		doThrow(new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND))
 				.when(spyService).findByIdOrFail(playlistId);
@@ -297,7 +297,7 @@ class PlaylistServiceTest extends DummyObject {
 				.description("내꺼")
 				.build();
 
-		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository, searchService, playlistTrackRepository);
+		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository, playlistTrackRepository, searchService);
 		PlaylistService spyService = spy(realService);
 
 		doReturn(playlist).when(spyService).findByIdOrFail(playlistId);
