@@ -109,11 +109,11 @@ public class RecommendationServiceWithRedis {
             //24시간 후 만료
             redisTemplate.expire(redisKey, properties.getRedis().getCacheTtlHours(), TimeUnit.HOURS);
         } catch (SpotifyApiException e){
-            log.error("Spotify API 호출 실패 - 유저 ID: {}, 원인: {}", user.getId(), e.getMessage(), e);
+            log.error("추천 트랙 갱신 작업: Spotify API 호출 실패 - 유저 ID: {}, 원인: {}", user.getId(), e.getMessage(), e);
             throw e;
         }
         catch (Exception e) {
-            log.error("예상치 못한 추천 트랙 갱신 실패 - 유저 ID: {}, 원인: {}", user.getId(), e.getMessage(), e);
+            log.error("추천 트랙 갱신 작업: 예상치 못한 실패 - 유저 ID: {}, 원인: {}", user.getId(), e.getMessage(), e);
             throw e;
         }
     }
@@ -196,7 +196,7 @@ public class RecommendationServiceWithRedis {
                 user = userService.findByIdOrFail(userId);
             } catch (BusinessException e) {
                 failCount.getAndIncrement();
-                log.warn("유저 ID: {}의 추천 트랙 갱신을 건너뜁니다. 사유: {}", userId, e.getMessage());
+                log.warn("추천 트랙 백그라운드 갱신 작업: 유저 ID {}의 추천 트랙 갱신을 건너뜁니다. 사유: {}", userId, e.getMessage());
                 return;
             }
 
@@ -207,17 +207,20 @@ public class RecommendationServiceWithRedis {
                 successCount.getAndIncrement();
             } else {
                 failCount.getAndIncrement();
-                log.warn("유저 ID: {}의 추천 트랙 갱신 작업이 락 획득 실패로 건너뛰었습니다", userId);
+                log.warn("추천 트랙 백그라운드 갱신 작업: 유저 ID {}의 추천 트랙 갱신 작업이 락 획득 실패로 건너뛰었습니다", userId);
             }
         } catch (SpotifyApiException e){
             failCount.getAndIncrement();
-            log.error("Spotify API 호출 실패 - 유저 ID: {}, 원인: {}", userId, e.getMessage(), e);
+            log.error("추천 트랙 백그라운드 갱신 작업: Spotify API 호출 실패 - 유저 ID: {}, 원인: {}", userId, e.getMessage());
+            log.debug("추천 트랙 백그라운드 갱신 작업: Spotify API 호출 실패 상세", e);
         } catch (Exception e){
             failCount.getAndIncrement();
             if(e instanceof BusinessException){
-                log.warn("유저 ID: {}의 추천 트랙 갱신 중 비즈니스 예외 발생: {}", userId, e.getMessage());
+                log.warn("추천 트랙 백그라운드 갱신 작업: 유저 ID {}의 추천 트랙 갱신 중 비즈니스 예외 발생: {}", userId, e.getMessage());
+                log.debug("추천 트랙 백그라운드 갱신 작업: 비즈니스 예외 발생. 상세 오류", e);
             } else{
-                log.error("유저 ID: {}의 추천 트랙 갱신 중 예기치 못한 오류 발생", userId, e);
+                log.error("추천 트랙 백그라운드 갱신 작업: 유저 ID: {}의 추천 트랙 갱신 중 예기치 못한 오류 발생", userId, e);
+                log.debug("추천 트랙 백그라운드 갱신 작업: 상세 오류", e);
             }
         }
     }
