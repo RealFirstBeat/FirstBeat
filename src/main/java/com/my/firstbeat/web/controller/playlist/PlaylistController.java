@@ -123,7 +123,7 @@ public class PlaylistController {
         return ResponseEntity.ok(ApiResult.success(new PlaylistsData(playlists, pagination)));
     }
 
-    @DeleteMapping("/v1/playlistId}")
+    @DeleteMapping("/v1/{playlistId}")
     public ResponseEntity<ApiResult<String>> deletePlaylist(
             @PathVariable Long playlistId,
             @AuthenticationPrincipal LoginUser user) {
