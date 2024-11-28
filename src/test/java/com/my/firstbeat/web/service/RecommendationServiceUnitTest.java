@@ -145,8 +145,8 @@ class RecommendationServiceUnitTest extends DummyObject {
             return sharedQueue; //이후 두 번째 접근에서는 데이터가 있는 sharedQueue 를 반환
         });
 
-        given(genreRepository.findTop5GenresByUser(eq(testUser), any(Pageable.class))).willReturn(genreList);
-        given(playlistRepository.findAllTrackByUser(eq(testUser), any(Pageable.class))).willReturn(trackList);
+        given(genreRepository.findRandomGenresByUser(eq(testUser), any(Pageable.class))).willReturn(genreList);
+        given(playlistRepository.findRandomTrackByUser(eq(testUser), any(Pageable.class))).willReturn(trackList);
         given(trackRepository.existsInUserPlaylist(eq(testUser), anyString())).willReturn(false);
 
         //when
@@ -188,7 +188,7 @@ class RecommendationServiceUnitTest extends DummyObject {
         given(userService.findByIdOrFail(testUser.getId())).willReturn(testUser);
         given(recommendationCache.get(eq(testUser.getId()), any())).willReturn(initalQueue);
         given(trackRepository.existsInUserPlaylist(eq(testUser), eq("캐시된 트랙 id"))).willReturn(true);
-        given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(genreList);
+        given(genreRepository.findRandomGenresByUser(any(), any())).willReturn(genreList);
         given(spotifyClient.getRecommendations(anyString(), anyString(), anyInt())).willReturn(mockRecommendation);
         given(trackRepository.existsInUserPlaylist(eq(testUser), eq("새 트랙 id"))).willReturn(false);
 
@@ -219,8 +219,8 @@ class RecommendationServiceUnitTest extends DummyObject {
         given(recommendationCache.get(eq(testUser.getId()), any())).willReturn(recommendations);
         //모든 캐시된 곡이 플리에 존재
         given(trackRepository.existsInUserPlaylist(eq(testUser), anyString())).willReturn(true);
-        given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(List.of(new Genre("k-pop")));
-        given(playlistRepository.findAllTrackByUser(any(), any())).willReturn(Collections.emptyList());
+        given(genreRepository.findRandomGenresByUser(any(), any())).willReturn(List.of(new Genre("k-pop")));
+        given(playlistRepository.findRandomTrackByUser(any(), any())).willReturn(Collections.emptyList());
 
         //5개가 남았을 때 spotifyApi에 새 트랙 리스트 추천 요청
         List<TrackResponse> newTracks = IntStream.range(0, 20)
@@ -263,8 +263,8 @@ class RecommendationServiceUnitTest extends DummyObject {
         given(recommendationCache.asMap()).willReturn(cacheMap);
         given(recommendationCache.get(eq(testUser.getId()), any())).willReturn(new ConcurrentLinkedQueue<>());
         given(userService.findByIdOrFail(testUser.getId())).willReturn(testUser);
-        given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(List.of(new Genre("k-pop")));
-        given(playlistRepository.findAllTrackByUser(any(), any())).willReturn(Arrays.asList(
+        given(genreRepository.findRandomGenresByUser(any(), any())).willReturn(List.of(new Genre("k-pop")));
+        given(playlistRepository.findRandomTrackByUser(any(), any())).willReturn(Arrays.asList(
                 Track.builder().name("Steady").spotifyTrackId("spotifyTrackId 112").build(),
                 Track.builder().name("Supercute").spotifyTrackId("spotifyTrackId 111").build()
         ));

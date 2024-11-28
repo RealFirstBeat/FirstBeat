@@ -2,6 +2,7 @@ package com.my.firstbeat.web.service.recommemdation;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.my.firstbeat.client.spotify.SpotifyClient;
+import com.my.firstbeat.client.spotify.config.SpotifyClientMock;
 import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
 import com.my.firstbeat.client.spotify.ex.SpotifyApiException;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
@@ -47,6 +48,8 @@ public class RecommendationService {
     private final Map<Long, ReentrantLock> userLocks = new ConcurrentHashMap<>(); //유저 별 락
     private static RecommendationProperties properties;
 
+    private final SpotifyClientMock spotifyClientMock;
+
 
 
     public TrackRecommendationResponse getRecommendations(Long userId) {
@@ -90,8 +93,11 @@ public class RecommendationService {
             String seedGenres = getSeedGenres(user);
             String seedTracks = getSeedTracks(user);
 
+//            RecommendationResponse spotifyRecommendations =
+//                    spotifyClient.getRecommendations(seedTracks, seedGenres, properties.getSize());
+
             RecommendationResponse spotifyRecommendations =
-                    spotifyClient.getRecommendations(seedTracks, seedGenres, properties.getSize());
+                    spotifyClientMock.getRecommendations(seedTracks, seedGenres, properties.getSize());
 
             Queue<TrackRecommendationResponse> recommendations = recommendationsCache.get(user.getId(), key -> new ConcurrentLinkedQueue<>());
             spotifyRecommendations.getTracks()
@@ -161,7 +167,7 @@ public class RecommendationService {
 
 
     private String getSeedGenres(User user){
-        String seedGenres = genreRepository.findTop5GenresByUser(user, PageRequest.of(0, properties.getSeedMax()))
+        String seedGenres = genreRepository.findRandomGenresByUser(user, PageRequest.of(0, properties.getSeedMax()))
                 .stream()
                 .map(Genre::getName)
                 .collect(Collectors.joining(","));
@@ -173,7 +179,7 @@ public class RecommendationService {
 
 
     private String getSeedTracks(User user){
-        List<Track> trackList = playlistRepository.findAllTrackByUser(user, PageRequest.of(0, properties.getSeedMax()));
+        List<Track> trackList = playlistRepository.findRandomTrackByUser(user, PageRequest.of(0, properties.getSeedMax()));
         return trackList.stream()
                 .limit(properties.getSeedMax())
                 .map(Track::getSpotifyTrackId)

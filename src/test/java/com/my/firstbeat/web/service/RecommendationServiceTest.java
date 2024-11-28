@@ -84,9 +84,9 @@ class RecommendationServiceTest extends DummyObject {
         given(userService.findByIdOrFail(anyLong())).willReturn(testUser);
 
         given(trackRepository.existsInUserPlaylist(any(), anyString())).willReturn(false);
-        given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(
+        given(genreRepository.findRandomGenresByUser(any(), any())).willReturn(
                 List.of(new Genre("pop"), new Genre("k-pop")));
-        given(playlistRepository.findAllTrackByUser(any(), any(Pageable.class)))
+        given(playlistRepository.findRandomTrackByUser(any(), any(Pageable.class)))
                 .willReturn(List.of(Track.builder().spotifyTrackId("test1").build(),
                         Track.builder().spotifyTrackId("test2").build()));
 

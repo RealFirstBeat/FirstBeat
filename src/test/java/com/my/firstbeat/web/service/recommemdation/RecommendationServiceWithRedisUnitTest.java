@@ -2,7 +2,6 @@ package com.my.firstbeat.web.service.recommemdation;
 
 import com.my.firstbeat.client.spotify.SpotifyClient;
 import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
-import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
 import com.my.firstbeat.client.spotify.ex.SpotifyApiException;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
 import com.my.firstbeat.web.domain.genre.Genre;
@@ -16,7 +15,6 @@ import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
 import com.my.firstbeat.web.service.UserService;
 import com.my.firstbeat.web.service.recommemdation.lock.RedisLockManager;
-import com.my.firstbeat.web.service.recommemdation.property.LockProperties;
 import com.my.firstbeat.web.service.recommemdation.property.RecommendationProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +33,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -44,7 +41,6 @@ import java.util.stream.IntStream;
 import static com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -201,9 +197,9 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
         when(userService.findByIdOrFail(testUser.getId())).thenReturn(testUser);
         when(redisTemplate.opsForList().size(REDIS_KEY))
                 .thenReturn(5L);
-        given(genreRepository.findTop5GenresByUser(any(), any())).willReturn(
+        given(genreRepository.findRandomGenresByUser(any(), any())).willReturn(
                 List.of(new Genre("pop"), new Genre("k-pop")));
-        given(playlistRepository.findAllTrackByUser(any(), any(Pageable.class)))
+        given(playlistRepository.findRandomTrackByUser(any(), any(Pageable.class)))
                 .willReturn(List.of(Track.builder().spotifyTrackId("test1").build(),
                         Track.builder().spotifyTrackId("test2").build()));
         when(spotifyClient.getRecommendations(anyString(), anyString(), anyInt()))
@@ -257,7 +253,7 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
     void refreshRecommendations_should_throw_exception_when_no_genres() {
         when(userService.findByIdOrFail(testUser.getId())).thenReturn(testUser);
         when(redisTemplate.opsForList().size(REDIS_KEY)).thenReturn(5L); //임계치
-        when(genreRepository.findTop5GenresByUser(eq(testUser), any(Pageable.class))).thenReturn(Collections.emptyList());
+        when(genreRepository.findRandomGenresByUser(eq(testUser), any(Pageable.class))).thenReturn(Collections.emptyList());
         when(lockManager.executeWithLockWithRetry(eq(testUser.getId()), any()))
                 .thenAnswer(invocation -> {
                     Supplier<?> supplier = invocation.getArgument(1);
@@ -274,9 +270,9 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
     void refreshRecommendations_should_propagate_spotify_api_exception() {
         when(userService.findByIdOrFail(testUser.getId())).thenReturn(testUser);
         when(redisTemplate.opsForList().size(REDIS_KEY)).thenReturn(5L); //임계치
-        when(genreRepository.findTop5GenresByUser(any(), any())).thenReturn(
+        when(genreRepository.findRandomGenresByUser(any(), any())).thenReturn(
                 List.of(new Genre("pop"), new Genre("k-pop")));
-        when(playlistRepository.findAllTrackByUser(any(), any(Pageable.class)))
+        when(playlistRepository.findRandomTrackByUser(any(), any(Pageable.class)))
                 .thenReturn(List.of(Track.builder().spotifyTrackId("test1").build(),
                         Track.builder().spotifyTrackId("test2").build()));
         when(spotifyClient.getRecommendations(anyString(), anyString(), anyInt()))
@@ -339,9 +335,9 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
                     runnable.run();
                     return true;
                 });
-        when(genreRepository.findTop5GenresByUser(any(), any())).thenReturn(
+        when(genreRepository.findRandomGenresByUser(any(), any())).thenReturn(
                 List.of(new Genre("pop"), new Genre("k-pop")));
-        when(playlistRepository.findAllTrackByUser(any(), any(Pageable.class)))
+        when(playlistRepository.findRandomTrackByUser(any(), any(Pageable.class)))
                 .thenReturn(List.of(Track.builder().spotifyTrackId("test1").build(),
                         Track.builder().spotifyTrackId("test2").build()));
         when(spotifyClient.getRecommendations(anyString(), anyString(), anyInt()))
@@ -355,8 +351,8 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
         verify(lockManager).executeWithLockForBackground(eq(testUser.getId()), any());
         verify(redisTemplate.opsForSet()).members(FAILED_KEY);
         verify(spotifyClient).getRecommendations(anyString(), anyString(), anyInt());
-        verify(genreRepository).findTop5GenresByUser(any(), any());
-        verify(playlistRepository).findAllTrackByUser(any(), any(Pageable.class));
+        verify(genreRepository).findRandomGenresByUser(any(), any());
+        verify(playlistRepository).findRandomTrackByUser(any(), any(Pageable.class));
         verify(redisTemplate.opsForList(), times(20)).rightPush(eq(REDIS_KEY), any());
     }
 
@@ -394,10 +390,10 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
         when(userService.findByIdOrFail(2L)).thenThrow(new BusinessException(ErrorCode.USER_NOT_FOUND));
         when(userService.findByIdOrFail(3L)).thenReturn(User.builder().id(3L).build());
 
-        when(genreRepository.findTop5GenresByUser(any(), any()))
+        when(genreRepository.findRandomGenresByUser(any(), any()))
                 .thenReturn(List.of(new Genre("pop"), new Genre("k-pop")));
 
-        when(playlistRepository.findAllTrackByUser(any(), any(Pageable.class)))
+        when(playlistRepository.findRandomTrackByUser(any(), any(Pageable.class)))
                 .thenReturn(List.of(
                         Track.builder().spotifyTrackId("스포티파이트랙아이디..1").build(),
                         Track.builder().spotifyTrackId("스포티파이트랙아이디..2").build()

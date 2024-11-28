@@ -11,8 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
 
-import java.util.Optional;
-
 public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
 
     boolean existsByUserAndTitle(User user, String title);
@@ -23,7 +21,7 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
             "join Track t on pt.track = t " +
             "where p.user = :user " +
             "order by function('random') ")
-    List<Track> findAllTrackByUser (@Param("user") User user, Pageable pageable);
+    List<Track> findRandomTrackByUser(@Param("user") User user, Pageable pageable);
 
 	//특정 사용자의 디폴트 플레이리스트 조회
 	Optional<Playlist> findByUserIdAndIsDefault(Long userId, boolean isDefault);

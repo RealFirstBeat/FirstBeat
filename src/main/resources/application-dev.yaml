@@ -10,6 +10,9 @@ spotify:
     secret: ${SPOTIFY_SECRET}
   token:
     refresh-buffer-seconds: 300 #5분
+  mock:
+    url: https://fa219561-d55d-4fba-b80a-2d4e0b46c946.mock.pstmn.io
+
 
 recommendation:
   refresh-threshold: 5
@@ -43,14 +46,15 @@ async:
 
 
 server:
-  port: 8080
+  port: 9090
   servlet:
     encoding:
       charset: utf-8
       force: true
 spring:
   datasource:
-    url: jdbc:h2:mem:test;MODE=MySQL
+    #url: jdbc:h2:mem:test;MODE=MySQL
+    url: jdbc:h2:tcp://localhost/~/firstbeat
     driver-class-name: org.h2.Driver
     username: sa
     password:

@@ -258,7 +258,7 @@ public class RecommendationServiceWithRedis {
 
 
     private String getSeedGenres(User user){
-        String seedGenres = genreRepository.findTop5GenresByUser(user, PageRequest.of(0, properties.getSeedMax()))
+        String seedGenres = genreRepository.findRandomGenresByUser(user, PageRequest.of(0, properties.getSeedMax()))
                 .stream()
                 .map(Genre::getName)
                 .collect(Collectors.joining(","));
@@ -270,7 +270,7 @@ public class RecommendationServiceWithRedis {
 
 
     private String getSeedTracks(User user){
-        List<Track> trackList = playlistRepository.findAllTrackByUser(user, PageRequest.of(0, properties.getSeedMax()));
+        List<Track> trackList = playlistRepository.findRandomTrackByUser(user, PageRequest.of(0, properties.getSeedMax()));
         return trackList.stream()
                 .limit(properties.getSeedMax())
                 .map(Track::getSpotifyTrackId)

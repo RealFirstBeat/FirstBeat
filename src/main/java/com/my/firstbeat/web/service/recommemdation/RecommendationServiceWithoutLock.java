@@ -94,7 +94,7 @@ public class RecommendationServiceWithoutLock {
 
     private String getSeedGenres(User user){
 
-        String seedGenres = genreRepository.findTop5GenresByUser(user, PageRequest.of(0, SEED_MAX))
+        String seedGenres = genreRepository.findRandomGenresByUser(user, PageRequest.of(0, SEED_MAX))
                 .stream()
                 .map(Genre::getName)
                 .collect(Collectors.joining(","));
@@ -105,7 +105,7 @@ public class RecommendationServiceWithoutLock {
     }
 
     private String getSeedTracks(User user){
-        List<Track> trackList = playlistRepository.findAllTrackByUser(user, PageRequest.of(0, SEED_MAX));
+        List<Track> trackList = playlistRepository.findRandomTrackByUser(user, PageRequest.of(0, SEED_MAX));
         return trackList.stream()
                 .limit(SEED_MAX)
                 .map(Track::getSpotifyTrackId)
