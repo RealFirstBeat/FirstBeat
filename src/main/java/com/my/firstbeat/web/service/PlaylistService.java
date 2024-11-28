@@ -1,9 +1,7 @@
 package com.my.firstbeat.web.service;
 
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
-import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
-import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
-import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.*;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.track.Track;
@@ -22,6 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -126,19 +127,54 @@ public class PlaylistService {
         playlistRepository.save(newDefaultPlaylist);
     }
 
-    public Page<Playlist> searchPlaylists(String query, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return playlistRepository.findByTitleContaining(query, pageable);
+    // 새로운 메서드
+    public PlaylistsData getPlaylistsData(String query, int page, int size) {
+        Page<Playlist> playlistPage = playlistRepository.findByTitleContaining(query, PageRequest.of(page, size));
+
+        List<PlaylistSearchResponse> playlists = playlistPage.stream()
+                .map(playlist -> new PlaylistSearchResponse(
+                        playlist.getId(),
+                        playlist.getTitle(),
+                        playlist.getDescription(),
+                        playlist.getUser().getName()
+                ))
+                .collect(Collectors.toList());
+
+        PaginationInfo pagination = new PaginationInfo(
+                playlistPage.getNumber() + 1,
+                playlistPage.getSize(),
+                playlistPage.getTotalPages(),
+                (int) playlistPage.getTotalElements()
+        );
+
+        return new PlaylistsData(playlists, pagination);
     }
 
     // 인메모리 캐시 사용
     @Cacheable(value = "simpleCache", cacheManager = "inMemoryCacheManager", key = "#query")
-    public Page<Playlist> searchPlaylistsWithInMemoryCache(String query, int page, int size) {
+    public PlaylistsData getPlaylistsDataWithCache(String query, int page, int size) {
         if (!query.isEmpty()) {
             searchService.recordSearch(query); // 검색어 기록
         }
-        Pageable pageable = PageRequest.of(page, size);
-        return playlistRepository.findByTitleContaining(query, pageable);
+        Page<Playlist> playlistPage = playlistRepository.findByTitleContaining(query, PageRequest.of(page, size));
+
+        List<PlaylistSearchResponse> playlists = playlistPage.stream()
+                .map(playlist -> new PlaylistSearchResponse(
+                        playlist.getId(),
+                        playlist.getTitle(),
+                        playlist.getDescription(),
+                        playlist.getUser().getName()
+                ))
+                .collect(Collectors.toList());
+
+        PaginationInfo pagination = new PaginationInfo(
+                playlistPage.getNumber() + 1,
+                playlistPage.getSize(),
+                playlistPage.getTotalPages(),
+                (int) playlistPage.getTotalElements()
+        );
+
+        return new PlaylistsData(playlists, pagination);
     }
 
     @Transactional

@@ -304,4 +304,3 @@ class PlaylistServiceTest extends DummyObject {
 		verify(trackRepository).findAllByPlaylist(any(), any());
 	}
 }
-

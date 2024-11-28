@@ -7,7 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class PlaylistSearchResponse {
     private Long playlistId;
-    private String name;
+    private String title;
     private String description;
     private String createdBy;
 }
