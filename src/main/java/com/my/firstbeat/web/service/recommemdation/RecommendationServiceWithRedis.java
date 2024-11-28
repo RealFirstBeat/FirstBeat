@@ -83,7 +83,18 @@ public class RecommendationServiceWithRedis {
                     refreshRecommendations(user, redisKey);
                 }
                 return Boolean.TRUE;
-            }).orElseThrow(() -> new BusinessException(ErrorCode.SERVICE_TEMPORARY_UNAVAILABLE));
+            }).orElseGet(() -> { //락 획득에 실패한 경우
+                Long remainingSize = redisTemplate.opsForList().size(redisKey);
+                log.warn("락 획득 실패로 인한 갱신 작업 실패. 유저: {}, 남은 추천 트랙 수: {}", user.getId(), remainingSize);
+
+                //데이터가 있으면 반환
+                if(remainingSize > 0) {
+                    return Boolean.TRUE;
+                }
+
+                //반환할 수 있는 데이터가 없다면
+                throw new BusinessException(ErrorCode.SERVICE_TEMPORARY_UNAVAILABLE);
+            });
         }
     }
 
