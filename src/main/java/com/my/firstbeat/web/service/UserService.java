@@ -53,11 +53,6 @@ public class UserService {
         // 선택된 장르 이름 가져오기
         List<String> genreNames = signupRequestDto.getGenreNames();
 
-        // 장르 검증
-        if (genreNames.size() < 3) {
-            throw new BusinessException(ErrorCode.CHOOSE_AT_LEAST_THREE_GENRE);
-        }
-
 
         List<Genre> genres = genreNames.stream()
                 .map(n -> genreRepository.findByName(n)

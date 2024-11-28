@@ -85,7 +85,7 @@ public class UserServiceRegisterTest extends DummyObject {
                 .genreNames(List.of("Rock", "Jazz", "Pop"))
                 .build();
 
-        when(userRepository.findByEmail("test1234@naver.com")).thenReturn(Optional.of(mockUserWithId(1L)));
+        when(userRepository.existsByEmail("test1234@naver.com")).thenReturn(true);
 
         // When & Then
         BusinessException exception = assertThrows(

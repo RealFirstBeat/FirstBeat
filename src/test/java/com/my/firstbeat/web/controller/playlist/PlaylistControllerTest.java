@@ -3,9 +3,7 @@ package com.my.firstbeat.web.controller.playlist;
 import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.config.security.loginuser.LoginUserService;
 import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
-import com.my.firstbeat.web.controller.track.TrackController;
 import com.my.firstbeat.web.domain.track.Track;
-import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.dummy.DummyObject;
 import com.my.firstbeat.web.service.PlaylistService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,16 +15,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
