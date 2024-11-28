@@ -151,7 +151,7 @@ public class RecommendationService {
 
     //userLock 클린업
     @Scheduled(fixedRate = 1, timeUnit = TimeUnit.HOURS)
-    private void cleanupUserLocks(){
+    public void cleanupUserLocks(){
         userLocks.keySet().removeIf(userId -> !recommendationsCache.asMap().containsKey(userId));
     }
 

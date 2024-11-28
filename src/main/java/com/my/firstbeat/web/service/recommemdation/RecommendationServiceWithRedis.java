@@ -18,6 +18,7 @@ import com.my.firstbeat.web.service.recommemdation.property.RecommendationProper
 import com.my.firstbeat.web.service.recommemdation.property.RecommendationRefreshTask;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.*;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -130,7 +132,12 @@ public class RecommendationServiceWithRedis {
     }
 
     //백그라운드 캐시 갱신
-    @Scheduled(fixedRate = 10, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedRate = 30, timeUnit = TimeUnit.MINUTES)
+    @SchedulerLock(
+            name = "backgroundRefresh",           // 락의 고유 이름
+            lockAtLeastFor = "5m",               // 작업이 일찍 끝나도 최소한 5분간은 락 유지
+            lockAtMostFor = "20m"                // 최대 20분 (15분 작업 + 여유 시간)
+    )
     public void backgroundRefresh(){
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
@@ -166,7 +173,7 @@ public class RecommendationServiceWithRedis {
         }
 
         if (refreshKeys.isEmpty()) {
-            log.info("갱신이 필요한 추천 트랙이 없습니다.");
+            log.info("갱신이 필요한 추천 트랙이 없습니다");
             return;
         }
 
@@ -189,7 +196,7 @@ public class RecommendationServiceWithRedis {
         });
 
         try{
-            boolean completed = latch.await(30, TimeUnit.MINUTES);
+            boolean completed = latch.await(15, TimeUnit.MINUTES);
             if(!completed){
                 log.warn("일부 추천 트랙 갱신 작업이 제한 시간 내에 완료되지 않았습니다");
             }

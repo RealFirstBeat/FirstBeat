@@ -46,7 +46,7 @@ public class AsyncConfig {
 
         //종료 정책
         executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(60);
+        executor.setAwaitTerminationSeconds(900); //15분
 
         executor.initialize();
         return executor.getThreadPoolExecutor();
