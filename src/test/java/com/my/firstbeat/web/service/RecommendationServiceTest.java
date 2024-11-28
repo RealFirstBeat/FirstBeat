@@ -12,6 +12,7 @@ import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.dummy.DummyObject;
 import com.my.firstbeat.web.service.recommemdation.RecommendationService;
+import com.my.firstbeat.web.service.recommemdation.property.RecommendationProperties;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -60,6 +61,9 @@ class RecommendationServiceTest extends DummyObject {
 
     @MockBean
     private PlaylistRepository playlistRepository;
+
+    @MockBean
+    private RecommendationProperties properties;
 
     private User testUser;
 
