@@ -360,6 +360,73 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
         verify(redisTemplate.opsForList(), times(20)).rightPush(eq(REDIS_KEY), any());
     }
 
+    @Test
+    @DisplayName("백그라운드 갱신: 일부 작업 실패")
+    void backgroundRefresh_should_handle_partial_failures() {
+        List<TrackResponse> tracks = IntStream.range(0, 20)
+                .mapToObj(i -> TrackResponse.builder()
+                        .id("spotifyId: "+i)
+                        .name("spotify name: "+i)
+                        .trackName("track: "+i)
+                        .artists(new TrackResponse.ArtistResponse("artist"))
+                        .build())
+                .collect(Collectors.toList());
+
+        RecommendationResponse recommendations = new RecommendationResponse();
+        recommendations.setTracks(tracks);
+
+        SetOperations<String, Object> setOperations = mock(SetOperations.class);
+        when(redisTemplate.opsForSet()).thenReturn(setOperations);
+
+        //실패한 작업 2개
+        Set<Object> failedTasks = Set.of("1", "2");
+        when(redisTemplate.opsForSet().members(FAILED_KEY)).thenReturn(failedTasks);
+
+        //스캔으로 갱신 대상 1개 발견
+        Cursor<String> cursor = mock(Cursor.class);
+        when(cursor.hasNext()).thenReturn(true, true, false);
+        when(cursor.next()).thenReturn(properties.getRedis().getKeyPrefix() + "3");
+        when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
+        when(redisTemplate.opsForList().size(properties.getRedis().getKeyPrefix() + "3")).thenReturn(5L);
+
+        //유저 1은 찾고 유저 2는 찾을 수 없고 유저 3은 존재하나 api 호출에서 실패
+        when(userService.findByIdOrFail(testUser.getId())).thenReturn(testUser);
+        when(userService.findByIdOrFail(2L)).thenThrow(new BusinessException(ErrorCode.USER_NOT_FOUND));
+        when(userService.findByIdOrFail(3L)).thenReturn(User.builder().id(3L).build());
+
+        when(genreRepository.findTop5GenresByUser(any(), any()))
+                .thenReturn(List.of(new Genre("pop"), new Genre("k-pop")));
+
+        when(playlistRepository.findAllTrackByUser(any(), any(Pageable.class)))
+                .thenReturn(List.of(
+                        Track.builder().spotifyTrackId("스포티파이트랙아이디..1").build(),
+                        Track.builder().spotifyTrackId("스포티파이트랙아이디..2").build()
+                ));
+
+        when(lockManager.executeWithLockForBackground(eq(1L), any()))
+                .thenAnswer(invocation -> {
+                    Runnable runnable = invocation.getArgument(1);
+                    runnable.run();
+                    return true;
+                });
+        when(lockManager.executeWithLockForBackground(eq(3L), any()))
+                .thenAnswer(invocation -> {
+                    Runnable runnable = invocation.getArgument(1);
+                    runnable.run();
+                    return true;
+                });
+
+        when(spotifyClient.getRecommendations(anyString(), anyString(), anyInt()))
+                .thenReturn(recommendations)
+                .thenThrow(new SpotifyApiException(new SpotifyWebApiException("api error")));
+
+        //when
+        recommendationService.backgroundRefresh();
+
+        verify(userService, times(4)).findByIdOrFail(any());
+        verify(redisTemplate.opsForList(), times(20)).rightPush(any(), any());
+        verify(redisTemplate.opsForSet()).members(FAILED_KEY);
+    }
 
 
 }
