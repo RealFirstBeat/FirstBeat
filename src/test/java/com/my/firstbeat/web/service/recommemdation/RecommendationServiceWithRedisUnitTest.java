@@ -28,6 +28,7 @@ import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -232,6 +233,29 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
 
     }
 
+    @Test
+    @DisplayName("추천 트랙 갱신: 장르가 없을 경우 예외 발생")
+    void refreshRecommendations_should_throw_exception_when_no_genres() {
+        when(userService.findByIdOrFail(testUser.getId())).thenReturn(testUser);
+        when(redisTemplate.opsForList().size(REDIS_KEY)).thenReturn(5L); //임계치
+        when(genreRepository.findTop5GenresByUser(eq(testUser), any(Pageable.class))).thenReturn(Collections.emptyList());
+        when(lockManager.executeWithLockWithRetry(eq(testUser.getId()), any()))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(1);
+                    return Optional.of(supplier.get());
+                });
+
+        assertThatThrownBy(() -> recommendationService.getRecommendations(testUser.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GENRES_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("추천 트랙 갱신: Spotify API 호출 실패 시 예외 전파")
+    void refreshRecommendations_should_propagate_spotify_api_exception() {
+
+
+    }
 
 
 
