@@ -4,6 +4,8 @@ import com.my.firstbeat.web.service.recommemdation.property.RecommendationProper
 import com.my.firstbeat.web.service.recommemdation.property.RecommendationRefreshTask;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -61,8 +63,12 @@ public class AsyncConfig {
                     properties.getRedis().getFailedTasksTtlHours(),
                     TimeUnit.HOURS
             );
-        } catch (Exception e){
-            log.error("실패한 갱신 작업 저장 중 오류 발생 - userId: {}", userId, e);
+        } catch (RedisConnectionException e) {
+            log.error("Redis 연결 실패로 갱신 작업 저장 실패 - userId: {}", userId, e);
+        } catch (RedisException e) {
+            log.error("Redis 작업 중 오류 발생 - userId: {}", userId, e);
+        } catch (Exception e) {
+            log.error("예상치 못한 오류로 갱신 작업 저장 실패 - userId: {}", userId, e);
         }
     }
 }
