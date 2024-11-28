@@ -3,6 +3,7 @@ package com.my.firstbeat.web.service.recommemdation;
 import com.my.firstbeat.client.spotify.SpotifyClient;
 import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
 import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
+import com.my.firstbeat.client.spotify.ex.SpotifyApiException;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
 import com.my.firstbeat.web.domain.genre.Genre;
 import com.my.firstbeat.web.domain.genre.GenreRepository;
@@ -27,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
+import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 
 import java.util.Collections;
 import java.util.List;
@@ -253,8 +255,24 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
     @Test
     @DisplayName("추천 트랙 갱신: Spotify API 호출 실패 시 예외 전파")
     void refreshRecommendations_should_propagate_spotify_api_exception() {
+        when(userService.findByIdOrFail(testUser.getId())).thenReturn(testUser);
+        when(redisTemplate.opsForList().size(REDIS_KEY)).thenReturn(5L); //임계치
+        when(genreRepository.findTop5GenresByUser(any(), any())).thenReturn(
+                List.of(new Genre("pop"), new Genre("k-pop")));
+        when(playlistRepository.findAllTrackByUser(any(), any(Pageable.class)))
+                .thenReturn(List.of(Track.builder().spotifyTrackId("test1").build(),
+                        Track.builder().spotifyTrackId("test2").build()));
+        when(spotifyClient.getRecommendations(anyString(), anyString(), anyInt()))
+                .thenThrow(new SpotifyApiException(new SpotifyWebApiException("api error")));
+        when(lockManager.executeWithLockWithRetry(eq(testUser.getId()), any()))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(1);
+                    return Optional.of(supplier.get());
+                });
 
-
+        assertThatThrownBy(() -> recommendationService.getRecommendations(testUser.getId()))
+                .isInstanceOf(SpotifyApiException.class)
+                .hasFieldOrPropertyWithValue("errorCode", com.my.firstbeat.client.spotify.ex.ErrorCode.API_ERROR);
     }
 
 
