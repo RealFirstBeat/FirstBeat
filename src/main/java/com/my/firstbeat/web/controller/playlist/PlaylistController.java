@@ -64,7 +64,7 @@ public class PlaylistController {
 
 
     // 디폴트 플레이리스트 변경
-    @PutMapping("/{playlistId}/default/")
+    @PutMapping("/{playlistId}/default")
     public ResponseEntity<ApiResult<String>> changeDefaultPlaylist(
             @PathVariable Long playlistId,
             @AuthenticationPrincipal LoginUser user) {
