@@ -14,6 +14,7 @@ import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
 import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
+import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
 
