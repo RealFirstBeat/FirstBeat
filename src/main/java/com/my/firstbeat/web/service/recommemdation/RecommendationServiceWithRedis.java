@@ -51,14 +51,7 @@ public class RecommendationServiceWithRedis {
         String redisKey = properties.getRedis().getKeyPrefix() + userId;
 
         //먼저 임계치 기반으로 트랙 갱신해야 하는지 확인
-        if(needsRefresh(redisKey)){
-            lockManager.executeWithLockWithRetry(userId, () -> {
-                if(needsRefresh(redisKey)){
-                    refreshRecommendations(user, redisKey);
-                }
-                return null;
-            }).orElseThrow(() -> new BusinessException(ErrorCode.SERVICE_TEMPORARY_UNAVAILABLE));
-        }
+        refreshIfNeeded(user, redisKey);
 
         //락 획득 전 반환할게 있다면 빠른 반환 시도
         TrackRecommendationResponse quickTry = popRecommendation(redisKey);
@@ -68,22 +61,30 @@ public class RecommendationServiceWithRedis {
 
         // 빠르게 반환할 추천 트랙이 없고, 빠르게 반환될 수 있는 트랙이 사용자의 플레이리스트에 있다면
         // 락을 획득해서 반환 시작
-        return lockManager.executeWithLockWithRetry(userId, () -> {
-            for(int attempts = 1; attempts <= properties.getMaxAttempts(); attempts++) {
+        for(int attempts = 1; attempts <= properties.getMaxAttempts(); attempts++) {
+            refreshIfNeeded(user, redisKey);
+            TrackRecommendationResponse recommendation = popRecommendation(redisKey);
+            if(recommendation == null) {
+                throw new BusinessException(ErrorCode.FAIL_TO_GET_RECOMMENDATION);
+            }
+            if(!trackRepository.existsInUserPlaylist(user, recommendation.getSpotifyTrackId())) {
+                return recommendation;
+            }
+            log.debug("유저: {}의 플레이리스트에 추천 트랙: {} 존재. 추천 재시도: {}",
+                    user.getId(), recommendation.getSpotifyTrackId(), attempts);
+        }
+        throw new BusinessException(ErrorCode.MAX_RECOMMENDATION_ATTEMPTS_EXCEED);
+    }
+
+    private void refreshIfNeeded(User user, String redisKey) {
+        if(needsRefresh(redisKey)) {
+            lockManager.executeWithLockWithRetry(user.getId(), () -> {
                 if(needsRefresh(redisKey)) {
                     refreshRecommendations(user, redisKey);
                 }
-                TrackRecommendationResponse recommendation = popRecommendation(redisKey);
-                if(recommendation == null) {
-                    throw new BusinessException(ErrorCode.FAIL_TO_GET_RECOMMENDATION);
-                }
-                if(!trackRepository.existsInUserPlaylist(user, recommendation.getSpotifyTrackId())) {
-                    return recommendation;
-                }
-                log.debug("유저: {}의 플레이리스트에 추천 트랙: {} 존재. 추천 재시도: {}", user.getId(), recommendation.getSpotifyTrackId(), attempts);
-            }
-            throw new BusinessException(ErrorCode.MAX_RECOMMENDATION_ATTEMPTS_EXCEED);
-        }).orElseThrow(() -> new BusinessException(ErrorCode.SERVICE_TEMPORARY_UNAVAILABLE)); //대기 시간 내 락을 획득하지 못하면 서비스 혼잡 오류 throw
+                return Boolean.TRUE;
+            }).orElseThrow(() -> new BusinessException(ErrorCode.SERVICE_TEMPORARY_UNAVAILABLE));
+        }
     }
 
     private TrackRecommendationResponse popRecommendation(String redisKey) {
