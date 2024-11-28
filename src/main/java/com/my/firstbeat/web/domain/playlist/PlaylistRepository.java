@@ -17,7 +17,6 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
 
     boolean existsByUserAndTitle(User user, String title);
 
-
     @Query("select t from Playlist p " +
             "join PlaylistTrack pt on pt.playlist = p " +
             "join Track t on pt.track = t " +
@@ -31,4 +30,5 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
 
     Page<Playlist> findByUserId(Long userId, Pageable pageable);
 
+    Page<Playlist> findByTitleContaining(String query, Pageable pageable);
 }
