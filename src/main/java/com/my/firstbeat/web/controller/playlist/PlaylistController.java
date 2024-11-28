@@ -6,6 +6,7 @@ import com.my.firstbeat.web.controller.playlist.dto.response.*;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.*;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.service.PlaylistService;
 import com.my.firstbeat.web.util.api.ApiResult;
@@ -24,6 +25,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import java.util.List;
 import java.util.stream.Collectors;
