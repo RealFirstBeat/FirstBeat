@@ -53,11 +53,6 @@ class PlaylistServiceTest extends DummyObject {
     @Mock
     private SearchService searchService;
 
-  	@BeforeEach
-	void setUp() {
-		MockitoAnnotations.openMocks(this); // Mock 객체 초기화
-	}
-
     @Test
     @DisplayName("플레이리스트 생성: 정상")
     void createPlaylist_success() {
