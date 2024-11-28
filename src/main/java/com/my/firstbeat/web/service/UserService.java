@@ -96,7 +96,6 @@ public class UserService {
             Set<Long> genreIdsToAdd = genreRepository.findIdsByNames(genresToAdd);
             List<Genre> genresToAddList = genreRepository.findAllById(genreIdsToAdd);
             for (Genre genre : genresToAddList) {
-                log.info("genres: " + genre.getName());
                 UserGenre userGenre = UserGenre.builder()
                         .user(user)
                         .genre(genre)
