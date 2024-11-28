@@ -1,4 +1,4 @@
-package com.my.firstbeat.web.service;
+package com.my.firstbeat.web.service.recommemdation;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.my.firstbeat.client.spotify.SpotifyClient;
@@ -13,6 +13,8 @@ import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
+import com.my.firstbeat.web.service.UserService;
+import com.my.firstbeat.web.service.recommemdation.property.RecommendationProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -43,10 +45,7 @@ public class RecommendationService {
 
     private final Cache<Long, Queue<TrackRecommendationResponse>> recommendationsCache;
     private final Map<Long, ReentrantLock> userLocks = new ConcurrentHashMap<>(); //유저 별 락
-    private static final int REFRESH_THRESHOLD = 5; // 5개 남으면 새로 다시 요청
-    private static final int RECOMMENDATIONS_SIZE = 20; //한 번에 받아오는 추천 트랙 수
-    private static final int MAX_ATTEMPTS = 20; //추천한 곡이 이미 유저의 플레이리스트에 있는 경우 다시 추천 큐에서 꺼내올 수 있는 최대 횟수
-    private static final int SEED_MAX = 5;
+    private static RecommendationProperties properties;
 
 
 
@@ -55,27 +54,23 @@ public class RecommendationService {
         Queue<TrackRecommendationResponse> recommendations =
                 recommendationsCache.get(userId, key -> new ConcurrentLinkedQueue<>());
 
-        //락 획득 전 반환할게 있다면 빠른 반환 시도
-        TrackRecommendationResponse quickTry = recommendations.poll();
-        if(quickTry != null && !trackRepository.existsInUserPlaylist(user, quickTry.getSpotifyTrackId())){
-            return quickTry;
-        }
-
-        // 빠르게 반환할 추천 트랙이 없고, 빠르게 반환될 수 있는 트랙이 사용자의 플레이리스트에 있다면
-        // 락을 획득해서 반환 시작
-        ReentrantLock userLock = userLocks.computeIfAbsent(userId, key -> new ReentrantLock());
-
-        for(int attempts = 1; attempts <= MAX_ATTEMPTS; attempts++) {
+        //먼저 갱신이 필요한지 체크 -> 임계치 기반 갱신 해야 함
+        if(needsRefresh(recommendations)) {
+            //락 획득 후 갱신
+            ReentrantLock userLock = userLocks.computeIfAbsent(userId, key -> new ReentrantLock());
             userLock.lock();
             try {
                 if(needsRefresh(recommendations)) {
                     refreshRecommendations(user);
-                    //갱신 후 캐시에서 추천 리스트 다시 가져옴
                     recommendations = recommendationsCache.get(userId, key -> new ConcurrentLinkedQueue<>());
                 }
             } finally {
                 userLock.unlock();
             }
+        }
+
+        //추천 트랙 반환
+        for(int attempts = 1; attempts <= properties.getMaxAttempts(); attempts++) {
             TrackRecommendationResponse recommendation = recommendations.poll();
             if(recommendation == null) {
                 throw new BusinessException(ErrorCode.FAIL_TO_GET_RECOMMENDATION);
@@ -83,7 +78,8 @@ public class RecommendationService {
             if(!trackRepository.existsInUserPlaylist(user, recommendation.getSpotifyTrackId())) {
                 return recommendation;
             }
-            log.debug("유저: {}의 플레이리스트에 추천 트랙: {} 존재. 추천 재시도: {}", user.getId(), recommendation.getSpotifyTrackId(), attempts);
+            log.debug("유저: {}의 플레이리스트에 추천 트랙: {} 존재. 추천 재시도: {}",
+                    user.getId(), recommendation.getSpotifyTrackId(), attempts);
         }
 
         throw new BusinessException(ErrorCode.MAX_RECOMMENDATION_ATTEMPTS_EXCEED);
@@ -95,7 +91,7 @@ public class RecommendationService {
             String seedTracks = getSeedTracks(user);
 
             RecommendationResponse spotifyRecommendations =
-                    spotifyClient.getRecommendations(seedTracks, seedGenres, RECOMMENDATIONS_SIZE);
+                    spotifyClient.getRecommendations(seedTracks, seedGenres, properties.getSize());
 
             Queue<TrackRecommendationResponse> recommendations = recommendationsCache.get(user.getId(), key -> new ConcurrentLinkedQueue<>());
             spotifyRecommendations.getTracks()
@@ -155,17 +151,17 @@ public class RecommendationService {
 
     //userLock 클린업
     @Scheduled(fixedRate = 1, timeUnit = TimeUnit.HOURS)
-    private void cleanupUserLocks(){
+    public void cleanupUserLocks(){
         userLocks.keySet().removeIf(userId -> !recommendationsCache.asMap().containsKey(userId));
     }
 
     public boolean needsRefresh(Queue<TrackRecommendationResponse> recommendations) {
-        return recommendations.size() <= REFRESH_THRESHOLD;
+        return recommendations.size() <= properties.getRefreshThreshold();
     }
 
 
     private String getSeedGenres(User user){
-        String seedGenres = genreRepository.findTop5GenresByUser(user, PageRequest.of(0, SEED_MAX))
+        String seedGenres = genreRepository.findTop5GenresByUser(user, PageRequest.of(0, properties.getSeedMax()))
                 .stream()
                 .map(Genre::getName)
                 .collect(Collectors.joining(","));
@@ -177,9 +173,9 @@ public class RecommendationService {
 
 
     private String getSeedTracks(User user){
-        List<Track> trackList = playlistRepository.findAllTrackByUser(user, PageRequest.of(0, SEED_MAX));
+        List<Track> trackList = playlistRepository.findAllTrackByUser(user, PageRequest.of(0, properties.getSeedMax()));
         return trackList.stream()
-                .limit(SEED_MAX)
+                .limit(properties.getSeedMax())
                 .map(Track::getSpotifyTrackId)
                 .collect(Collectors.joining(","));
     }
