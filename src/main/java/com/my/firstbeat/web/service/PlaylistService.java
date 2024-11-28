@@ -121,5 +121,10 @@ public class PlaylistService {
         newDefaultPlaylist.updateDefault(true);
         playlistRepository.save(newDefaultPlaylist);
     }
+
+    public Page<Playlist> searchPlaylists(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return playlistRepository.findByTitleContaining(query, pageable);
+    }
 }
 
