@@ -3,6 +3,7 @@ package com.my.firstbeat.web.controller.playlist;
 import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistDeleteResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.service.PlaylistService;
@@ -39,6 +40,17 @@ public class PlaylistController {
             @PageableDefault(sort = "CreatedAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(ApiResult.success(playlistService.getMyPlaylists(loginUser.getUser().getId(), pageable)));
     }
+
+    // 플레이리스트 곡 단건 삭제
+    @DeleteMapping("/{playlistId}/tracks/{trackId}")
+    public ResponseEntity<ApiResult<PlaylistDeleteResponse>> deleteTrackFromPlaylist(
+            @AuthenticationPrincipal LoginUser loginUser,
+            @PathVariable Long playlistId,
+            @PathVariable Long trackId) {
+        PlaylistDeleteResponse response = playlistService.deleteTrackFromPlaylist (loginUser, playlistId, trackId);
+        return ResponseEntity.ok(ApiResult.success(response));
+    }
+
 
     // 디폴트 플레이리스트 가져오기 또는 생성
     @GetMapping("/default")
