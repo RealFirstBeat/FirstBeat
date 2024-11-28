@@ -81,8 +81,9 @@ public class PlaylistController {
     @GetMapping
     public ApiResult<PlaylistsData> getPlaylists(
             @RequestParam(defaultValue = "") String query,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(value = "page", defaultValue = "0", required = false) @PositiveOrZero int page,
+            @RequestParam(value = "size", defaultValue = "10", required = false) @Range(min = 1, max = 100, message = "페이지 크기는 1에서 100 사이여야 합니다") int size
+    ) {
 
         Page<Playlist> playlistPage = playlistService.searchPlaylists(query, page, size);
 
