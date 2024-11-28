@@ -7,12 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Configuration
 @EnableCaching
@@ -31,4 +31,8 @@ public class CacheConfig {
                 .build();
     }
 
+    @Bean
+    public CacheManager inMemoryCacheManager() {
+        return new ConcurrentMapCacheManager("popularSearches");
+    }
 }
