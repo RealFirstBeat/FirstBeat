@@ -4,22 +4,27 @@ import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistDeleteResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
 import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.track.TrackRepository;
+import com.my.firstbeat.web.domain.track.Track;
+import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 
 @Service
 @RequiredArgsConstructor
@@ -85,6 +90,24 @@ public class PlaylistService {
         }
         return defaultPlaylist;
     }
+
+
+	public TrackListResponse getTrackList(Long playlistId, int page, int size) {
+		Playlist playlist = findByIdOrFail(playlistId);
+		Pageable pageable = PageRequest.of(page, size);
+		try {
+			Page<Track> trackPage = trackRepository.findAllByPlaylist(playlist, pageable);
+			return new TrackListResponse(trackPage);
+		} catch(Exception e){
+			log.error("플레이리스트 내 트랙 목록 조회 시 오류 발생: 플레이리스트 ID: {}, 원인: {}", playlistId, e.getMessage(), e);
+			throw new BusinessException(ErrorCode.TRACK_FETCH_ERROR);
+		}
+	}
+
+	public Playlist findByIdOrFail(Long playlistId){
+		return playlistRepository.findById(playlistId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
+	}
 
     //디폴트 플레이리스트 변경 로직
     public void changeDefaultPlaylist(Long userId, Long playlistId) {

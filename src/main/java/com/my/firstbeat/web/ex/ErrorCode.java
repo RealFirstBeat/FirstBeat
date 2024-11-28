@@ -15,7 +15,9 @@ public enum ErrorCode {
     PLAYLIST_NOT_FOUND("플레이리스트가 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
     TRACK_NOT_FOUND("트랙을 찾을 수 없습니다.",HttpStatus.NOT_FOUND.value()),
     UNAUTHORIZED_ACCESS("사용자의 권한이 없습니다.",HttpStatus.UNAUTHORIZED.value()),
-    ;
+	TRACK_FETCH_ERROR("플레이리스트 내 트랙 목록을 불러오는 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR.value());
+
+	;
 
     private final String message;
     private final int status;
