@@ -11,7 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
 
-import java.util.Optional;
 
 public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
 
@@ -30,5 +29,7 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
 
 
     Page<Playlist> findByUserId(Long userId, Pageable pageable);
+
+	Optional<Playlist> findByIdAndUserId(Long playlistId, Long userId);
 
 }

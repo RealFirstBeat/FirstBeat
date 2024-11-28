@@ -1,10 +1,15 @@
 package com.my.firstbeat.web.service;
 
+import com.my.firstbeat.web.config.security.loginuser.LoginUser;
 import com.my.firstbeat.web.controller.playlist.dto.request.PlaylistCreateRequest;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistDeleteResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
+import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
+import com.my.firstbeat.web.domain.track.Track;
+import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.ex.BusinessException;
@@ -24,6 +29,8 @@ public class PlaylistService {
 
     private final PlaylistRepository playlistRepository;
     private final UserRepository userRepository;
+    private final TrackRepository trackRepository;
+    private final PlaylistTrackRepository playlistTrackRepository;
 
     // 플레이리스트 생성
     @Transactional
@@ -95,6 +102,38 @@ public class PlaylistService {
         // 새로운 defalut를 세팅
         newDefaultPlaylist.updateDefault(true);
         playlistRepository.save(newDefaultPlaylist);
+    }
+
+    //플레이리스트 곡 단건 삭제 에 관련된 로직
+    public PlaylistDeleteResponse deleteTrackFromPlaylist(LoginUser loginUser, Long playlistId, Long trackId) {
+        // 로그인된 사용자 정보 확인
+        if(loginUser ==null || loginUser.getUser() == null)
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+
+        Long userId = loginUser.getUser().getId();
+
+        // 플레이리스트 가져오기
+        Playlist playlist = playlistRepository.findByIdAndUserId(playlistId, userId)
+            .orElseThrow(()-> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
+
+        // 사용자 권한 확인이 있어야 겠네 -> 그 플레이리스트가 그 사람건지 확인하는거
+        if(!playlist.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        // 트랙 가져오기
+        Track track =trackRepository.findById(trackId)
+            .orElseThrow(()-> new BusinessException(ErrorCode.TRACK_NOT_FOUND));
+
+        // 플레이리스트- 트랙 관계 삭제
+        playlistTrackRepository.deleteByPlaylistAndTrack(playlist, track);
+
+        // 삭제 완료 후 응답 생성
+        return new PlaylistDeleteResponse(
+            playlistId,
+            trackId,
+            "해당 트랙이 플레이리스트에서 삭제되었습니다."
+        );
     }
 }
 
