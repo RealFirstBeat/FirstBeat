@@ -5,6 +5,7 @@ import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateRespo
 import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
+import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
 import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.track.TrackRepository;
 import com.my.firstbeat.web.domain.user.User;
@@ -49,6 +50,9 @@ class PlaylistServiceTest extends DummyObject {
 
     @Mock
     private TrackRepository trackRepository;
+
+	@Mock
+	private PlaylistTrackRepository playlistTrackRepository;
   
   	@BeforeEach
 	void setUp() {
@@ -245,7 +249,7 @@ class PlaylistServiceTest extends DummyObject {
 			  pageable,
 			  2
 	  );
-		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository);
+		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository, playlistTrackRepository);
 		PlaylistService spyService = spy(realService);
 
 		doReturn(playlist).when(spyService).findByIdOrFail(playlistId);
@@ -266,7 +270,7 @@ class PlaylistServiceTest extends DummyObject {
 	@DisplayName("플레이리스트 내 추천 트랙 반환: 존재하지 않는 플레이리스트 조회 시 예외 발생")
 	void getTrackList_PlaylistNotFound() {
 		Long playlistId = 999L;
-		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository);
+		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository, playlistTrackRepository);
 		PlaylistService spyService = spy(realService);
 		doThrow(new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND))
 				.when(spyService).findByIdOrFail(playlistId);
@@ -288,7 +292,7 @@ class PlaylistServiceTest extends DummyObject {
 				.description("내꺼")
 				.build();
 
-		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository);
+		PlaylistService realService = new PlaylistService(playlistRepository, userRepository, trackRepository , playlistTrackRepository);
 		PlaylistService spyService = spy(realService);
 
 		doReturn(playlist).when(spyService).findByIdOrFail(playlistId);
