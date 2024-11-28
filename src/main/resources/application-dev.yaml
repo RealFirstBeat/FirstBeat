@@ -11,6 +11,35 @@ spotify:
   token:
     refresh-buffer-seconds: 300 #5분
 
+recommendation:
+  refresh-threshold: 5
+  size: 20
+  max-attempts: 20
+  seed-max: 5
+  redis:
+    key-prefix: "recommendation:"
+    failed-tasks-key: "recommendation:failed-refresh"
+    cache-ttl-hours: 24
+    failed-tasks-ttl-hours: 24
+
+lock:
+  key-prefix: "recommendation:lock:"
+  wait-time: 5                    # 대기 시간
+  lease-time: 10                  # 점유 시간
+  max-attempts: 3                 # 최대 재시도 횟수
+  initial-back-off-ms: 1000       # 초기 대기 시간
+  back-off-multiplier: 2.0        # 백오프 승수
+  background:
+    max-attempts: 2
+    initial-back-off-ms: 500
+    back_-ff-multiplier: 2.0
+
+async:
+  recommendation:
+    core-pool-size: 5         # 스레드 풀이 항상 유지하는 기본 스레드 수
+    max-pool-size: 10         # 스레드 풀이 가질 수 있는 최대 스레드 수 -> 대기열 가득 찼을 때만 core-pool-size를 넘어 생성
+    queue-capacity: 100       # 작업 대기열 크기
+    keep-alive-seconds: 60    # 유휴 스레드 유지 시간
 
 
 server:
@@ -39,6 +68,10 @@ spring:
   output:
     ansi:
       enabled: always
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 
 logging:
