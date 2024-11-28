@@ -6,6 +6,7 @@ import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistCreateRespo
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistDeleteResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
 import com.my.firstbeat.web.controller.playlist.dto.response.PlaylistRetrieveResponse;
+import com.my.firstbeat.web.controller.playlist.dto.response.TrackListResponse;
 import com.my.firstbeat.web.domain.playlist.Playlist;
 import com.my.firstbeat.web.domain.playlist.PlaylistRepository;
 import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrackRepository;
@@ -15,13 +16,14 @@ import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.domain.user.UserRepository;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 
 @Service
@@ -34,6 +36,8 @@ public class PlaylistService {
   	private final UserRepository userRepository;
     private final TrackRepository trackRepository;
     private final PlaylistTrackRepository playlistTrackRepository;
+    private final SearchService searchService;
+
 
     // 플레이리스트 생성
     @Transactional
@@ -90,22 +94,22 @@ public class PlaylistService {
     }
 
 
-	public TrackListResponse getTrackList(Long playlistId, int page, int size) {
-		Playlist playlist = findByIdOrFail(playlistId);
-		Pageable pageable = PageRequest.of(page, size);
-		try {
-			Page<Track> trackPage = trackRepository.findAllByPlaylist(playlist, pageable);
-			return new TrackListResponse(trackPage);
-		} catch(Exception e){
-			log.error("플레이리스트 내 트랙 목록 조회 시 오류 발생: 플레이리스트 ID: {}, 원인: {}", playlistId, e.getMessage(), e);
-			throw new BusinessException(ErrorCode.TRACK_FETCH_ERROR);
-		}
-	}
+    public TrackListResponse getTrackList(Long playlistId, int page, int size) {
+        Playlist playlist = findByIdOrFail(playlistId);
+        Pageable pageable = PageRequest.of(page, size);
+        try {
+            Page<Track> trackPage = trackRepository.findAllByPlaylist(playlist, pageable);
+            return new TrackListResponse(trackPage);
+        } catch (Exception e) {
+            log.error("플레이리스트 내 트랙 목록 조회 시 오류 발생: 플레이리스트 ID: {}, 원인: {}", playlistId, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.TRACK_FETCH_ERROR);
+        }
+    }
 
-	public Playlist findByIdOrFail(Long playlistId){
-		return playlistRepository.findById(playlistId)
-				.orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
-	}
+    public Playlist findByIdOrFail(Long playlistId) {
+        return playlistRepository.findById(playlistId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
+    }
 
     //디폴트 플레이리스트 변경 로직
     public void changeDefaultPlaylist(Long userId, Long playlistId) {
@@ -126,6 +130,16 @@ public class PlaylistService {
     }
 
     public Page<Playlist> searchPlaylists(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return playlistRepository.findByTitleContaining(query, pageable);
+    }
+
+    // 인메모리 캐시 사용
+    @Cacheable(value = "simpleCache", cacheManager = "inMemoryCacheManager", key = "#query")
+    public Page<Playlist> searchPlaylistsWithInMemoryCache(String query, int page, int size) {
+        if (!query.isEmpty()) {
+            searchService.recordSearch(query); // 검색어 기록
+        }
         Pageable pageable = PageRequest.of(page, size);
         return playlistRepository.findByTitleContaining(query, pageable);
     }
