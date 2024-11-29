@@ -1,6 +1,5 @@
 # [Spring 3기] FirstBeat Project
-
-
+![image.jpg](image.jpg)
 
 ## 📁 프로젝트 소개
 
@@ -20,11 +19,21 @@
 - [9. 프로젝트 후기](#9-프로젝트-후기)
 
 ### 1. 개발 환경
+<ul>
+ <li><Strong>Server 및 Back-end</Strong>: <img src="https://img.shields.io/badge/java-007396?style=for-the-badge&logo=java&logoColor=white">
+<img src="https://img.shields.io/badge/springboot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white">
+<img src="https://img.shields.io/badge/gradle-02303A?style=for-the-badge&logo=gradle&logoColor=white"> 
+<img src="https://img.shields.io/badge/redis-FF4438?style=for-the-badge&logo=redis&logoColor=white">
+ </li>
+</ul>
+<ul>
+  <li><Strong>버전 및 이슈 관리</Strong>: <img src="https://img.shields.io/badge/github-181717?style=for-the-badge&logo=github&logoColor=white">
+   </li>
+</ul>
 
- - Server: 
- - 버전 및 이슈 관리:
- - 협업 툴:
- - 디자인(와이어프레임):
+ - 협업 툴: ![Notion](https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white)
+ - 디자인(와이어프레임): ![Figma](https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white)
+
 
 ### 2. 채택 개발 기술 및 브랜치 전략
 
