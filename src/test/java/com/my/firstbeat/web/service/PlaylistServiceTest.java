@@ -301,11 +301,12 @@ class PlaylistServiceTest extends DummyObject {
 		Long playlistId = 1L;
 		Long trackId = 100L;
 		Long userId = 10L;
+		String spotifyTrackId = "spotify:track:example";
 
 		User mockUser = mockUserWithId(userId);
 		LoginUser loginUser = new LoginUser(mockUser);
 
-		Playlist playlist = mockPlaylist(playlistId, mockUser);
+		Playlist playlist = mockPlaylist(mockUser, false);
 		Track track = mockTrack(trackId, spotifyTrackId);
 
 		// Mock 설정
@@ -356,7 +357,7 @@ class PlaylistServiceTest extends DummyObject {
 		User mockUser = mockUserWithId(userId);
 		LoginUser loginUser = new LoginUser(mockUser);
 
-		Playlist playlist = mockPlaylist(playlistId, mockUser);
+		Playlist playlist = mockPlaylist(mockUser, false);
 
 		// Mock 설정
 		when(playlistRepository.findByIdAndUserId(eq(playlistId), eq(userId)))
