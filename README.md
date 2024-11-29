@@ -83,7 +83,174 @@
 <summary> 프로젝트 구조 </summary>
 
 ```
-
+FirstBeat
+├─ image.jpg
+├─ README.md
+└─ src
+   ├─ main
+   │  ├─ java
+   │  │  └─ com
+   │  │     └─ my
+   │  │        └─ firstbeat
+   │  │           ├─ client
+   │  │           │  └─ spotify
+   │  │           │     ├─ config
+   │  │           │     │  ├─ env
+   │  │           │     │  │  └─ EnvLoader.java
+   │  │           │     │  └─ SpotifyConfig.java
+   │  │           │     ├─ dto
+   │  │           │     │  └─ response
+   │  │           │     │     ├─ RecommendationResponse.java
+   │  │           │     │     └─ TrackSearchResponse.java
+   │  │           │     ├─ ex
+   │  │           │     │  ├─ ErrorCode.java
+   │  │           │     │  └─ SpotifyApiException.java
+   │  │           │     ├─ handler
+   │  │           │     │  └─ SpotifyExceptionHandler.java
+   │  │           │     ├─ SpotifyApiCall.java
+   │  │           │     ├─ SpotifyClient.java
+   │  │           │     └─ SpotifyTokenManager.java
+   │  │           ├─ FirstBeatApplication.java
+   │  │           └─ web
+   │  │              ├─ config
+   │  │              │  ├─ async
+   │  │              │  │  ├─ AsyncConfig.java
+   │  │              │  │  └─ AsyncProperties.java
+   │  │              │  ├─ cache
+   │  │              │  │  └─ CacheConfig.java
+   │  │              │  ├─ jwt
+   │  │              │  │  ├─ JwtAuthenticationFilter.java
+   │  │              │  │  ├─ JwtAuthorizationFilter.java
+   │  │              │  │  ├─ JwtExceptionFilter.java
+   │  │              │  │  ├─ JwtUtil.java
+   │  │              │  │  └─ JwtVo.java
+   │  │              │  ├─ RecommendationConfig.java
+   │  │              │  ├─ redis
+   │  │              │  │  ├─ RedisConfig.java
+   │  │              │  │  ├─ RedissonConfig.java
+   │  │              │  │  └─ SchedulerConfiguration.java
+   │  │              │  └─ security
+   │  │              │     ├─ handler
+   │  │              │     │  ├─ CustomAccessDeniedHandler.java
+   │  │              │     │  ├─ CustomAuthenticationEntryPoint.java
+   │  │              │     │  └─ SecurityResponseHandler.java
+   │  │              │     ├─ loginuser
+   │  │              │     │  ├─ dto
+   │  │              │     │  │  ├─ LoginRequest.java
+   │  │              │     │  │  └─ LoginResponse.java
+   │  │              │     │  ├─ LoginUser.java
+   │  │              │     │  └─ LoginUserService.java
+   │  │              │     └─ SecurityConfig.java
+   │  │              ├─ controller
+   │  │              │  ├─ genre
+   │  │              │  │  ├─ dto
+   │  │              │  │  │  ├─ request
+   │  │              │  │  │  │  └─ GenreCreateRequest.java
+   │  │              │  │  │  └─ response
+   │  │              │  │  │     └─ GenreCreateResponse.java
+   │  │              │  │  └─ GenreController.java
+   │  │              │  ├─ playlist
+   │  │              │  │  ├─ dto
+   │  │              │  │  │  ├─ request
+   │  │              │  │  │  │  ├─ PlaylistCreateRequest.java
+   │  │              │  │  │  │  └─ PlaylistSearchRequest.java
+   │  │              │  │  │  └─ response
+   │  │              │  │  │     ├─ PaginationInfo.java
+   │  │              │  │  │     ├─ PlaylistCreateResponse.java
+   │  │              │  │  │     ├─ PlaylistResponse.java
+   │  │              │  │  │     ├─ PlaylistRetrieveResponse.java
+   │  │              │  │  │     ├─ PlaylistsData.java
+   │  │              │  │  │     ├─ PlaylistSearchResponse.java
+   │  │              │  │  │     └─ TrackListResponse.java
+   │  │              │  │  ├─ PlaylistController.java
+   │  │              │  │  └─ SearchController.java
+   │  │              │  ├─ track
+   │  │              │  │  ├─ dto
+   │  │              │  │  │  ├─ request
+   │  │              │  │  │  │  ├─ TrackCreateRequest.java
+   │  │              │  │  │  │  └─ TrackRequestDto.java
+   │  │              │  │  │  └─ response
+   │  │              │  │  │     ├─ TrackCreateResponse.java
+   │  │              │  │  │     └─ TrackRecommendationResponse.java
+   │  │              │  │  └─ TrackController.java
+   │  │              │  └─ user
+   │  │              │     ├─ dto
+   │  │              │     │  ├─ request
+   │  │              │     │  │  ├─ JoinRequest.java
+   │  │              │     │  │  ├─ SignupRequestDto.java
+   │  │              │     │  │  └─ UpdateMyPageRequest.java
+   │  │              │     │  ├─ response
+   │  │              │     │  │  ├─ GetMyPageResponse.java
+   │  │              │     │  │  ├─ JoinResponse.java
+   │  │              │     │  │  └─ UpdateMyPageResponse.java
+   │  │              │     │  └─ valid
+   │  │              │     │     ├─ PasswordValidator.java
+   │  │              │     │     └─ ValidPassword.java
+   │  │              │     └─ UserController.java
+   │  │              ├─ domain
+   │  │              │  ├─ base
+   │  │              │  │  └─ BaseEntity.java
+   │  │              │  ├─ genre
+   │  │              │  │  ├─ Genre.java
+   │  │              │  │  └─ GenreRepository.java
+   │  │              │  ├─ playlist
+   │  │              │  │  ├─ InMemoryPopularSearchCache.java
+   │  │              │  │  ├─ Playlist.java
+   │  │              │  │  ├─ PlaylistRepository.java
+   │  │              │  │  ├─ PopularSearchCache.java
+   │  │              │  │  └─ RedisPopularSearchCache.java
+   │  │              │  ├─ playlistTrack
+   │  │              │  │  ├─ PlaylistTrack.java
+   │  │              │  │  └─ PlaylistTrackRepository.java
+   │  │              │  ├─ track
+   │  │              │  │  ├─ Track.java
+   │  │              │  │  └─ TrackRepository.java
+   │  │              │  ├─ user
+   │  │              │  │  ├─ Role.java
+   │  │              │  │  ├─ User.java
+   │  │              │  │  └─ UserRepository.java
+   │  │              │  └─ userGenre
+   │  │              │     ├─ UserGenre.java
+   │  │              │     └─ UserGenreRepository.java
+   │  │              ├─ dummy
+   │  │              │  └─ DummyObject.java
+   │  │              ├─ ex
+   │  │              │  ├─ BusinessException.java
+   │  │              │  ├─ ErrorCode.java
+   │  │              │  └─ ServerException.java
+   │  │              ├─ handler
+   │  │              │  └─ GlobalExceptionHandler.java
+   │  │              ├─ service
+   │  │              │  ├─ GenreService.java
+   │  │              │  ├─ InMemorySearchService.java
+   │  │              │  ├─ PlaylistService.java
+   │  │              │  ├─ PlaylistSwipeService.java
+   │  │              │  ├─ recommemdation
+   │  │              │  │  ├─ lock
+   │  │              │  │  │  ├─ metric
+   │  │              │  │  │  │  ├─ LockExecutionMetrics.java
+   │  │              │  │  │  │  └─ LockMetricsConstants.java
+   │  │              │  │  │  └─ RedisLockManager.java
+   │  │              │  │  ├─ property
+   │  │              │  │  │  ├─ LockProperties.java
+   │  │              │  │  │  ├─ RecommendationProperties.java
+   │  │              │  │  │  └─ RecommendationRefreshTask.java
+   │  │              │  │  ├─ RecommendationService.java
+   │  │              │  │  ├─ RecommendationServiceWithoutLock.java
+   │  │              │  │  └─ RecommendationServiceWithRedis.java
+   │  │              │  ├─ search
+   │  │              │  │  └─ SearchServiceConfig.java
+   │  │              │  ├─ SearchService.java
+   │  │              │  ├─ TrackService.java
+   │  │              │  └─ UserService.java
+   │  │              └─ util
+   │  │                 └─ api
+   │  │                    ├─ ApiError.java
+   │  │                    └─ ApiResult.java
+   │  └─ resources
+   │     ├─ application-dev.yaml
+   │     ├─ application-test.yaml
+   │     └─ application.yaml
 ```
 
 </details>
