@@ -5,7 +5,16 @@
 
 
 ## 팀원 구성
+<br>
 
+<div align="center">
+
+| **장문석** | **안예원** | **장용환** | **이시우** | **류지수** |
+| :------: |  :------: | :------: | :------: | :------: |
+| [<img src="" height=150 width=150> <br/> @jangms3](https://github.com/jangms3) | [<img src="" height=150 width=150> <br/> @yaewon0441](https://github.com/yaewon0411) | [<img src="" height=150 width=150> <br/> @Hae-Dal](https://github.com/Hae-Dal) | [<img src="" height=150 width=150> <br/> @matino0216](https://github.com/matino0216) | [<img src="" height=150 width=150> <br/> @dameun0527](https://github.com/dameun0527) |
+
+</div>
+<br>
 
 ## 📋 목차
 - [1. 개발 환경](#1-개발-환경)
@@ -284,6 +293,11 @@ FirstBeat
   - 장르 유효성 검사
 - 플레이리스트 단건 삭제 기능
 
+[지수]
+- 플레이리스트
+  - 플레이리스트 생성
+  - 내가 만든 플레이리스트 조회
+- 본인이 작성한 기능의 모든 단건 테스트
 
 ### 5. 개발 기간 및 작업 관리
 기간: 2024/11/23 ~ 202411/29 (총 7일)
