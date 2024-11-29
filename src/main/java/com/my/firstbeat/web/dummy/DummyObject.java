@@ -15,19 +15,7 @@ public class DummyObject {
 
     protected String mockUserPassword = "test1234";
 
-    protected User mockUserWithId(){
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-
-        return User.builder()
-                .id(1L)
-                .name("test name")
-                .email("test1234@naver.com")
-                .password(encoder.encode(mockUserPassword))
-                .role(Role.USER)
-                .build();
-    }
-
-	protected User mockUser(){
+    protected User mockUser(){
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
         return User.builder()
@@ -37,6 +25,33 @@ public class DummyObject {
                 .role(Role.USER)
                 .build();
     }
+
+    protected List<UserGenre> mockUserGenres(User user) {
+        List<UserGenre> userGenres = new ArrayList<>();
+
+        Genre genre1 = Genre.builder().name("Rock").build();
+        Genre genre2 = Genre.builder().name("Pop").build();
+
+        UserGenre userGenre1 = UserGenre.builder().user(user).genre(genre1).build();
+        UserGenre userGenre2 = UserGenre.builder().user(user).genre(genre2).build();
+
+        userGenres.add(userGenre1);
+        userGenres.add(userGenre2);
+
+        return userGenres;
+    }
+
+	protected User mockUserWithId(){
+		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
+		return User.builder()
+			.id(1L)
+			.name("test name")
+			.email("test1234@naver.com")
+			.password(encoder.encode(mockUserPassword))
+			.role(Role.USER)
+			.build();
+	}
 
 	protected User mockUserWithId(Long id) {
 		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
@@ -48,21 +63,6 @@ public class DummyObject {
 			.password(encoder.encode(mockUserPassword))
 			.role(Role.USER)
 			.build();
-	}
-
-	protected List<UserGenre> mockUserGenres(User user) {
-		List<UserGenre> userGenres = new ArrayList<>();
-
-		Genre genre1 = Genre.builder().name("Rock").build();
-		Genre genre2 = Genre.builder().name("Pop").build();
-
-		UserGenre userGenre1 = UserGenre.builder().user(user).genre(genre1).build();
-		UserGenre userGenre2 = UserGenre.builder().user(user).genre(genre2).build();
-
-		userGenres.add(userGenre1);
-		userGenres.add(userGenre2);
-
-		return userGenres;
 	}
 
 	protected Playlist mockPlaylist(User user, boolean isDefault) {
@@ -83,5 +83,5 @@ public class DummyObject {
 			.build();
 	}
 
+	
 }
-
