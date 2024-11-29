@@ -30,10 +30,14 @@
   <li><Strong>버전 및 이슈 관리</Strong>: <img src="https://img.shields.io/badge/github-181717?style=for-the-badge&logo=github&logoColor=white">
    </li>
 </ul>
-
- - 협업 툴: ![Notion](https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white)
- - 디자인(와이어프레임): ![Figma](https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white)
-
+<ul>
+  <li><Strong>협업 툴</Strong>: <img src="https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white">
+   </li>
+</ul>
+<ul>
+  <li>디자인(와이어프레임): <img src="https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white"
+   </li>
+</ul>
 
 ### 2. 채택 개발 기술 및 브랜치 전략
 
