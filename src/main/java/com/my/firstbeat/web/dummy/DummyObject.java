@@ -1,7 +1,15 @@
 package com.my.firstbeat.web.dummy;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
+import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
 import com.my.firstbeat.web.domain.genre.Genre;
 import com.my.firstbeat.web.domain.playlist.Playlist;
+import com.my.firstbeat.web.domain.track.Track;
+import com.my.firstbeat.web.domain.playlist.Playlist;
+import com.my.firstbeat.web.domain.playlistTrack.PlaylistTrack;
 import com.my.firstbeat.web.domain.track.Track;
 import com.my.firstbeat.web.domain.user.Role;
 import com.my.firstbeat.web.domain.user.User;
@@ -26,7 +34,7 @@ public class DummyObject {
                 .build();
     }
 
-    protected User mockUser(){
+	protected User mockUser(){
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
         return User.builder()
@@ -63,22 +71,22 @@ public class DummyObject {
 
         return userGenres;
     }
+	protected Playlist mockPlaylist(Long id, User user) {
+		return Playlist.builder()
+			.id(id)
+			.user(user)
+			.title("Test Playlist " + id)
+			.description("Test Description")
+			.build();
+	}
 
-    protected Playlist mockPlaylist(Long id, User user) {
-        return Playlist.builder()
-            .id(id)
-            .user(user)
-            .title("Test Playlist " + id)
-            .description("Test Description")
-            .build();
-    }
-
-    protected Track mockTrack(Long id) {
-        return Track.builder()
-            .id(id)
-            .name("Test Track " + id)
-            .albumCoverUrl("http://test.com/album" + id)
-            .artistName("Artist " + id)
-            .build();
-    }
+	protected Track mockTrack(Long id) {
+		return Track.builder()
+			.id(id)
+			.name("Test Track " + id)
+			.albumCoverUrl("http://test.com/album" + id)
+			.artistName("Artist " + id)
+			.build();
+	}
 }
+

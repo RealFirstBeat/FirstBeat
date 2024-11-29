@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -178,5 +177,15 @@ public class RecommendationService {
                 .limit(properties.getSeedMax())
                 .map(Track::getSpotifyTrackId)
                 .collect(Collectors.joining(","));
+    }
+
+	public boolean removeTrackFromRecommendations(Long userId, String spotifyTrackId) {
+        Queue<TrackRecommendationResponse> recommendations =
+            recommendationsCache.get(userId, key -> new ConcurrentLinkedQueue<>());
+
+        // 큐에서 해당 트랙 제거
+        return recommendations.removeIf(
+            recommendation -> recommendation.getSpotifyTrackId().equals(spotifyTrackId)
+        );
     }
 }

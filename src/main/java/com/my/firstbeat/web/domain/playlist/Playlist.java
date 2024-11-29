@@ -30,6 +30,7 @@ public class Playlist extends BaseEntity {
     private boolean isDefault; //디폴트 여부 추가
 
     // 커스텀 생성자
+    @Builder
     public Playlist(User user, String title, String description, boolean isDefault) {
         this.user = user;
         this.title = title;
@@ -46,6 +47,7 @@ public class Playlist extends BaseEntity {
         this.title = title;
         this.description = description;
         this.user = user;
+
     }
 
 }
