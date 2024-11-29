@@ -13,6 +13,7 @@ public enum ErrorCode {
     DUPLICATE_PLAYLIST_TITLE("이미 존재하는 제목입니다.", HttpStatus.CONFLICT.value()),
     MAX_RECOMMENDATION_ATTEMPTS_EXCEED("일시적으로 추천 서비스를 이용할 수 없습니다. 잠시 후 다시 시도해주세요", HttpStatus.CONFLICT.value()),
     PLAYLIST_NOT_FOUND("플레이리스트가 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
+    RECOMMENDATION_TRACK_REMOVAL_FAILED("추천 트렉을 제거하는데 실패하였습니다.", HttpStatus.CONFLICT.value()),
     DUPLICATE_EMAIL("중복된 Email 입니다.", HttpStatus.CONFLICT.value()),
     INVALID_GENRES("유효하지 않은 장르가 포함되어 있습니다.", HttpStatus.BAD_REQUEST.value()),
     CHOOSE_AT_LEAST_THREE_GENRE("최소 세 가지 이상의 장르를 선택해주세요.", HttpStatus.BAD_REQUEST.value()),
