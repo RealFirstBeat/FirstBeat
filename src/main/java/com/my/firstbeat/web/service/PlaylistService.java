@@ -71,6 +71,7 @@ public class PlaylistService {
     }
 
     // 디폴트 플레이리스트 가져오기 또는 생성
+	@Transactional
     public Playlist getOrCreateDefaultPlaylist(Long userId) {
         // 디폴트 플레이리스트 검색
         Playlist defaultPlaylist = playlistRepository.findByUserIdAndIsDefault(userId, true)
@@ -79,7 +80,7 @@ public class PlaylistService {
         // 디폴트 플레이리스트가 없으면 생성
         if (defaultPlaylist == null) {
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
             defaultPlaylist = playlistRepository.save(new Playlist(
                     user,
                     "제목없음",
@@ -109,6 +110,7 @@ public class PlaylistService {
     }
 
     //디폴트 플레이리스트 변경 로직
+	@Transactional
     public void changeDefaultPlaylist(Long userId, Long playlistId) {
         // 최소 한개는 default playlist 가 있다고 가정
         // 기존 유저의 dafault playlist 를 가져와서
@@ -119,12 +121,17 @@ public class PlaylistService {
 
         // 파라미터로 넘어온 playlist id 가 진짜 존재하는지 확인
         Playlist newDefaultPlaylist = playlistRepository.findById(playlistId)
-                .orElseThrow(() -> new IllegalArgumentException("플레이리스트가 존재하지 않습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
 
-        // 새로운 defalut를 세팅
+        // 새로운 default 를 세팅
         newDefaultPlaylist.updateDefault(true);
         playlistRepository.save(newDefaultPlaylist);
     }
+
+	public Playlist getDefaultPlaylist(Long userId) {
+		return playlistRepository.findByUserIdAndIsDefault(userId, true)
+			.orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
+	}
 
     public Page<Playlist> searchPlaylists(String query, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
