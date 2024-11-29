@@ -60,11 +60,10 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)// csrf 비활성화
                 .cors(cors -> cors.configurationSource(configurationSource()))
                 .authorizeHttpRequests(authorize ->  authorize
-                        .requestMatchers("/auth/**", "/api/v2/tracks/recommendations", "/api/v1/tracks/recommendations",
+                        .requestMatchers("/api/v1/auth/register", "/api/v2/tracks/recommendations", "/api/v1/tracks/recommendations",
                                 "/api/v3/tracks/recommendations",
                                 "/api/v1/metrics/concurrent-calls", "/api/v2/metrics/concurrent-calls",
                                 "/api/v3/metrics/concurrent-calls").permitAll()
-                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) //jwt 사용
                 .formLogin(AbstractHttpConfigurer::disable) //formLogin 비활성화

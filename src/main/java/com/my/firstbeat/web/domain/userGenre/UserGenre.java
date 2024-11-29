@@ -5,7 +5,6 @@ import com.my.firstbeat.web.domain.genre.Genre;
 import com.my.firstbeat.web.domain.user.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.yaml.snakeyaml.tokens.ScalarToken;
 
 @Entity
 @Getter
