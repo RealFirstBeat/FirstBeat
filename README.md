@@ -1,5 +1,5 @@
 # [Spring 3기] FirstBeat Project
-![image.jpg](image.jpg)
+![image.jpg](https://github.com/RealFirstBeat/FirstBeat/blob/readme/image/image.jpg)
 
 ## 📁 프로젝트 소개
 
@@ -9,9 +9,15 @@
 
 <div align="center">
 
-| **장문석** | **안예원** | **장용환** | **이시우** | **류지수** |
-| :------: |  :------: | :------: | :------: | :------: |
-| [<img src="" height=150 width=150> <br/> @jangms3](https://github.com/jangms3) | [<img src="" height=150 width=150> <br/> @yaewon0441](https://github.com/yaewon0411) | [<img src="" height=150 width=150> <br/> @Hae-Dal](https://github.com/Hae-Dal) | [<img src="" height=150 width=150> <br/> @matino0216](https://github.com/matino0216) | [<img src="" height=150 width=150> <br/> @dameun0527](https://github.com/dameun0527) |
+| **장문석** | **안예원** | **장용환** |
+| :------: |  :------: | :------: |
+| [<img src="" height=150 width=150> <br/> @jangms3](https://github.com/jangms3) | [<img src="https://github.com/RealFirstBeat/FirstBeat/blob/readme/image/%EA%B0%95%EC%95%84%EC%A7%80.jpg" height=150 width=150> <br/> @yaewon0441](https://github.com/yaewon0411) | [<img src="https://github.com/RealFirstBeat/FirstBeat/blob/readme/image/%EA%B3%B0.jpg" height=150 width=150> <br/> @Hae-Dal](https://github.com/Hae-Dal) |
+
+
+| **이시우** | **류지수** |
+| :------: |  :------: |
+| [<img src="https://github.com/RealFirstBeat/FirstBeat/blob/readme/image/%EA%B3%A0%EC%96%91%EC%9D%B4.jpg" height=150 width=150> <br/> @matino0216](https://github.com/matino0216) | [<img src="https://github.com/RealFirstBeat/FirstBeat/blob/readme/image/%ED%86%A0%EB%81%BC.jpg" height=150 width=150> <br/> @dameun0527](https://github.com/dameun0527) |
+
 
 </div>
 <br>
