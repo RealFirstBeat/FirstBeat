@@ -306,7 +306,7 @@ class PlaylistServiceTest extends DummyObject {
 		LoginUser loginUser = new LoginUser(mockUser);
 
 		Playlist playlist = mockPlaylist(playlistId, mockUser);
-		Track track = mockTrack(trackId);
+		Track track = mockTrack(trackId, spotifyTrackId);
 
 		// Mock 설정
 		when(playlistRepository.findByIdAndUserId(eq(playlistId), eq(userId)))
