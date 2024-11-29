@@ -27,7 +27,7 @@
  </li>
 </ul>
 <ul>
-  <li><Strong>버전 및 이슈 관리</Strong>: <img src="https://img.shields.io/badge/github-181717?style=for-the-badge&logo=github&logoColor=white">
+  <li><Strong>버전 및 이슈 관리</Strong>: <a href="https://github.com/RealFirstBeat/FirstBeat"><img src="https://img.shields.io/badge/github-181717?style=for-the-badge&logo=github&logoColor=white">
    </li>
 </ul>
 <ul>
