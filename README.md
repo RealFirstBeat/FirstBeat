@@ -38,11 +38,55 @@
   <li>디자인(와이어프레임): <img src="https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white"
    </li>
 </ul>
+<ul>
+  <li>외부 Open API: <img src="https://img.shields.io/badge/Spotify-1ED760?style=for-the-badge&logo=spotify&logoColor=white">
+   </li>
+</ul>
 
 ### 2. 채택 개발 기술 및 브랜치 전략
 
 
+#### Spring Security, JWT Token
+
+- Spring Security
+  - 보안
+- JWT Token
+  - 토큰
+
+#### Data JPA, Redis, Caffeine cache
+
+- Data JPA
+  - 쿼리
+- Redis
+  - 캐시
+- Caffeine cache
+  - 캐시
+
+#### H2
+
+- DB
+
+#### 브랜치 전략
+
+- Git-flow 전략을 기반으로 main, dev 브랜치와 feature 보조 브랜치 운용
+- main, dev, feat 브랜치로 나누어 개발
+  - **main**
+  - **dev**
+  - **feat**
+
+<br>
+
+
 ### 3. 프로젝트 구조
+
+<details>
+<summary> 프로젝트 구조 </summary>
+
+```
+
+```
+
+</details>
 
 ### 4. 역할 분담
 
