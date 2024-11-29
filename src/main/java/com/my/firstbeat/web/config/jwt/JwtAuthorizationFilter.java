@@ -34,9 +34,24 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
                 return;
             }
 
+            if(request.getRequestURI().contains("tracks")){
+                log.info("추천 트랙 반환 경로라서 패스함~");
+                chain.doFilter(request, response);
+                return;
+            }
+
+            if(request.getRequestURI().contains("metrics")){
+                chain.doFilter(request, response);
+                return;
+            }
+
+
+
             if(!isHeaderValid(request)){
                 throw new JwtException("Authorization 헤더가 누락되었습니다");
             }
+
+
 
             //토큰 파싱
             String token = jwtUtil.substringToken(request.getHeader(JwtVo.HEADER));

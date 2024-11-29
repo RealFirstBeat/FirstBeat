@@ -1,6 +1,7 @@
 package com.my.firstbeat.web.service.recommemdation;
 
 import com.my.firstbeat.client.spotify.SpotifyClient;
+import com.my.firstbeat.client.spotify.config.SpotifyClientMock;
 import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
 import com.my.firstbeat.client.spotify.ex.SpotifyApiException;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
@@ -24,9 +25,8 @@ import org.springframework.data.redis.core.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -47,6 +47,16 @@ public class RecommendationServiceWithRedis {
     private final RedisLockManager lockManager;
     private final RecommendationProperties properties;
     private final ExecutorService recommendationBackgroundExecutor;
+    private final Map<Long, AtomicInteger> concurrentRequestsPerUser = new ConcurrentHashMap<>(); //nGrinder 테스트 지표를 위해 추가
+    private final SpotifyClientMock spotifyClientMock;
+
+    // 메트릭 조회 메서드 추가 (nGrinder)
+    public Map<Long, Integer> getConcurrentRequests() {
+        Map<Long, Integer> metrics = new HashMap<>();
+        concurrentRequestsPerUser.forEach((userId, count) ->
+                metrics.put(userId, count.get()));
+        return metrics;
+    }
 
     public TrackRecommendationResponse getRecommendations(Long userId) {
         User user = userService.findByIdOrFail(userId);
@@ -105,19 +115,39 @@ public class RecommendationServiceWithRedis {
     }
 
     private void refreshRecommendations(User user, String redisKey) {
+        AtomicInteger concurrent = concurrentRequestsPerUser.computeIfAbsent(user.getId(), k -> new AtomicInteger(0)); //nGrinder
+        int concurrentCount = concurrent.incrementAndGet(); //nGrinder
+
         try {
+            if (concurrentCount > 1) {
+                log.warn("중복 API calls 호출 발생 유저 ID: {}, 동시 요청 카운트: {}",
+                        user.getId(), concurrentCount);
+            }
+
             String seedGenres = getSeedGenres(user);
             String seedTracks = getSeedTracks(user);
 
-            RecommendationResponse spotifyRecommendations =
-                    spotifyClient.getRecommendations(seedTracks, seedGenres, properties.getSeedMax());
+//            RecommendationResponse spotifyRecommendations =
+//                    spotifyClient.getRecommendations(seedTracks, seedGenres, properties.getSeedMax());
+
+
+            SpotifyClientMock.RecommendationResponse spotifyRecommendations
+                    = spotifyClientMock.getRecommendations(seedTracks, seedGenres, properties.getSeedMax());
+
 
             ListOperations<String, Object> listOps = redisTemplate.opsForList();
 
-            spotifyRecommendations.getTracks()
+//            spotifyRecommendations.getTracks()
+//                    .stream()
+//                    .map(TrackRecommendationResponse::new)
+//                    .forEach(track -> listOps.rightPush(redisKey, track));
+
+            spotifyRecommendations.getTrackResponses()
                     .stream()
                     .map(TrackRecommendationResponse::new)
                     .forEach(track -> listOps.rightPush(redisKey, track));
+
+
 
             //24시간 후 만료
             redisTemplate.expire(redisKey, properties.getRedis().getCacheTtlHours(), TimeUnit.HOURS);
@@ -258,7 +288,7 @@ public class RecommendationServiceWithRedis {
 
 
     private String getSeedGenres(User user){
-        String seedGenres = genreRepository.findRandomGenresByUser(user, PageRequest.of(0, properties.getSeedMax()))
+        String seedGenres = genreRepository.findRandomGenresByUser(user.getId(), properties.getSeedMax())
                 .stream()
                 .map(Genre::getName)
                 .collect(Collectors.joining(","));

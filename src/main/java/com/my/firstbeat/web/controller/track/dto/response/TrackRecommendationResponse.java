@@ -1,5 +1,6 @@
 package com.my.firstbeat.web.controller.track.dto.response;
 
+import com.my.firstbeat.client.spotify.config.SpotifyClientMock;
 import com.my.firstbeat.client.spotify.dto.response.TrackSearchResponse;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,14 @@ public class TrackRecommendationResponse {
 
 
     public TrackRecommendationResponse(TrackResponse trackResponse) {
+        this.spotifyTrackId = trackResponse.getId();
+        this.name = trackResponse.getTrackName();
+        this.previewUrl = trackResponse.getPreviewUrl();
+        this.albumCoverUrl = trackResponse.getAlbumCoverUrl();
+        this.artistName = trackResponse.getArtists().getName();
+    }
+
+    public TrackRecommendationResponse(SpotifyClientMock.RecommendationResponse.TrackResponse trackResponse) {
         this.spotifyTrackId = trackResponse.getId();
         this.name = trackResponse.getTrackName();
         this.previewUrl = trackResponse.getPreviewUrl();

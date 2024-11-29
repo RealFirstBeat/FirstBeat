@@ -253,7 +253,7 @@ class RecommendationServiceWithRedisUnitTest extends DummyObject {
     void refreshRecommendations_should_throw_exception_when_no_genres() {
         when(userService.findByIdOrFail(testUser.getId())).thenReturn(testUser);
         when(redisTemplate.opsForList().size(REDIS_KEY)).thenReturn(5L); //임계치
-        when(genreRepository.findRandomGenresByUser(eq(testUser), any(Pageable.class))).thenReturn(Collections.emptyList());
+        when(genreRepository.findRandomGenresByUser(eq(testUser.getId()), anyInt()).thenReturn(Collections.emptyList());
         when(lockManager.executeWithLockWithRetry(eq(testUser.getId()), any()))
                 .thenAnswer(invocation -> {
                     Supplier<?> supplier = invocation.getArgument(1);

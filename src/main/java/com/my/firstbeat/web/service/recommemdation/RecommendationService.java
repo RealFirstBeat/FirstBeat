@@ -3,7 +3,6 @@ package com.my.firstbeat.web.service.recommemdation;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.my.firstbeat.client.spotify.SpotifyClient;
 import com.my.firstbeat.client.spotify.config.SpotifyClientMock;
-import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
 import com.my.firstbeat.client.spotify.ex.SpotifyApiException;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
 import com.my.firstbeat.web.domain.genre.Genre;
@@ -46,11 +45,19 @@ public class RecommendationService {
 
     private final Cache<Long, Queue<TrackRecommendationResponse>> recommendationsCache;
     private final Map<Long, ReentrantLock> userLocks = new ConcurrentHashMap<>(); //유저 별 락
-    private static RecommendationProperties properties;
+    private final RecommendationProperties properties;
 
     private final SpotifyClientMock spotifyClientMock;
 
+    private final Map<Long, AtomicInteger> concurrentRequestsPerUser = new ConcurrentHashMap<>(); //nGrinder 테스트 지표를 위해 추가
 
+    // 메트릭 조회 메서드 추가 (nGrinder)
+    public Map<Long, Integer> getConcurrentRequests() {
+        Map<Long, Integer> metrics = new HashMap<>();
+        concurrentRequestsPerUser.forEach((userId, count) ->
+                metrics.put(userId, count.get()));
+        return metrics;
+    }
 
     public TrackRecommendationResponse getRecommendations(Long userId) {
         User user = userService.findByIdOrFail(userId);
@@ -89,18 +96,33 @@ public class RecommendationService {
     }
 
     private void refreshRecommendations(User user) {
+
+        AtomicInteger concurrent = concurrentRequestsPerUser.computeIfAbsent(user.getId(), k -> new AtomicInteger(0)); //nGrinder
+        int concurrentCount = concurrent.incrementAndGet(); //nGrinder
+
+
         try {
+
+            if (concurrentCount > 1) {
+                log.warn("중복 API calls 호출 발생 유저 ID: {}, 동시 요청 카운트: {}",
+                        user.getId(), concurrentCount);
+            }
+
             String seedGenres = getSeedGenres(user);
             String seedTracks = getSeedTracks(user);
 
 //            RecommendationResponse spotifyRecommendations =
 //                    spotifyClient.getRecommendations(seedTracks, seedGenres, properties.getSize());
 
-            RecommendationResponse spotifyRecommendations =
-                    spotifyClientMock.getRecommendations(seedTracks, seedGenres, properties.getSize());
+            log.info("리프레쉬 레코멘데이션 들어옴... 유저 ID: {}", user.getId());
+//            RecommendationResponse spotifyRecommendations =
+//                    spotifyClientMock.getRecommendations(seedTracks, seedGenres, properties.getSize());
+
+            SpotifyClientMock.RecommendationResponse spotifyRecommendations
+                    = spotifyClientMock.getRecommendations(seedTracks, seedGenres, properties.getSize());
 
             Queue<TrackRecommendationResponse> recommendations = recommendationsCache.get(user.getId(), key -> new ConcurrentLinkedQueue<>());
-            spotifyRecommendations.getTracks()
+            spotifyRecommendations.getTrackResponses()
                     .stream()
                     .map(TrackRecommendationResponse::new)
                     .forEach(recommendations::offer);
@@ -167,7 +189,7 @@ public class RecommendationService {
 
 
     private String getSeedGenres(User user){
-        String seedGenres = genreRepository.findRandomGenresByUser(user, PageRequest.of(0, properties.getSeedMax()))
+        String seedGenres = genreRepository.findRandomGenresByUser(user.getId(), properties.getSeedMax())
                 .stream()
                 .map(Genre::getName)
                 .collect(Collectors.joining(","));

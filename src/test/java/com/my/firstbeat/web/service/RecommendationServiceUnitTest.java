@@ -14,6 +14,7 @@ import com.my.firstbeat.web.dummy.DummyObject;
 import com.my.firstbeat.web.ex.BusinessException;
 import com.my.firstbeat.web.ex.ErrorCode;
 import com.my.firstbeat.web.service.recommemdation.RecommendationService;
+import com.my.firstbeat.web.service.recommemdation.property.RecommendationProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,8 +24,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,6 +69,9 @@ class RecommendationServiceUnitTest extends DummyObject {
     @Mock
     private Cache<Long, Queue<TrackRecommendationResponse>> recommendationCache;
 
+    @MockBean
+    private RecommendationProperties properties;
+
     private User testUser;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -73,6 +79,14 @@ class RecommendationServiceUnitTest extends DummyObject {
     @BeforeEach
     void setUp(){
         testUser = mockUserWithId();
+
+        properties = new RecommendationProperties();
+        properties.setMaxAttempts(3);
+        properties.setRefreshThreshold(5);
+        properties.getRedis().setKeyPrefix("recommendation:user:");
+        properties.getRedis().setCacheTtlHours(24);
+        properties.getRedis().setFailedTasksKey("recommendation:failed-refresh");
+        ReflectionTestUtils.setField(recommendationService, "properties", properties);
     }
 
     @Test
@@ -145,7 +159,7 @@ class RecommendationServiceUnitTest extends DummyObject {
             return sharedQueue; //이후 두 번째 접근에서는 데이터가 있는 sharedQueue 를 반환
         });
 
-        given(genreRepository.findRandomGenresByUser(eq(testUser), any(Pageable.class))).willReturn(genreList);
+        given(genreRepository.findRandomGenresByUser(eq(testUser), anyInt())).willReturn(genreList);
         given(playlistRepository.findRandomTrackByUser(eq(testUser), any(Pageable.class))).willReturn(trackList);
         given(trackRepository.existsInUserPlaylist(eq(testUser), anyString())).willReturn(false);
 

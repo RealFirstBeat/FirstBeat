@@ -13,6 +13,7 @@ import com.my.firstbeat.web.domain.user.User;
 import com.my.firstbeat.web.dummy.DummyObject;
 import com.my.firstbeat.web.service.recommemdation.RecommendationService;
 import com.my.firstbeat.web.service.recommemdation.property.RecommendationProperties;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +70,18 @@ class RecommendationServiceTest extends DummyObject {
     private User testUser;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+    @BeforeEach
+    void setUp(){
+
+        properties = new RecommendationProperties();
+        properties.setMaxAttempts(3);
+        properties.setRefreshThreshold(5);
+        properties.getRedis().setKeyPrefix("recommendation:user:");
+        properties.getRedis().setCacheTtlHours(24);
+        properties.getRedis().setFailedTasksKey("recommendation:failed-refresh");
+        ReflectionTestUtils.setField(recommendationService, "properties", properties);
+    }
 
     @Test
     @DisplayName("여러 스레드가 동시에 캐시 리프레시 시도할 때 락으로 인해 중복 리프레시가 발생하지 않음")

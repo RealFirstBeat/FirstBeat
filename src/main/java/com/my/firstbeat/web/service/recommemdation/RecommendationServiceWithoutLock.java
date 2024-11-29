@@ -1,6 +1,7 @@
 package com.my.firstbeat.web.service.recommemdation;
 
 import com.my.firstbeat.client.spotify.SpotifyClient;
+import com.my.firstbeat.client.spotify.config.SpotifyClientMock;
 import com.my.firstbeat.client.spotify.dto.response.RecommendationResponse;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
 import com.my.firstbeat.web.domain.genre.Genre;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +36,9 @@ public class RecommendationServiceWithoutLock {
     private final GenreRepository genreRepository;
     private final PlaylistRepository playlistRepository;
     private final TrackRepository trackRepository;
+    private final SpotifyClientMock spotifyClientMock;
+    private final Map<Long, AtomicInteger> concurrentRequestsPerUser = new ConcurrentHashMap<>(); //nGrinder 테스트 지표를 위해 추가
+
 
     private final Map<Long, Queue<TrackRecommendationResponse>> userRecommendationsCache = new ConcurrentHashMap<>();
     private static final int REFRESH_THRESHOLD = 5; // 5개 남으면 새로 다시 요청
@@ -42,9 +47,20 @@ public class RecommendationServiceWithoutLock {
 
     private static final int SEED_MAX = 5;
 
+    // 메트릭 조회 메서드 추가 (nGrinder)
+    public Map<Long, Integer> getConcurrentRequests() {
+        Map<Long, Integer> metrics = new HashMap<>();
+        concurrentRequestsPerUser.forEach((userId, count) ->
+                metrics.put(userId, count.get()));
+        return metrics;
+    }
+
     public TrackRecommendationResponse getRecommendations(Long userId) {
         //사용자 검증
         User user = userService.findByIdOrFail(userId);
+
+        AtomicInteger concurrent = concurrentRequestsPerUser.computeIfAbsent(user.getId(), k -> new AtomicInteger(0)); //nGrinder
+        int concurrentCount = concurrent.incrementAndGet(); //nGrinder
 
         //해당 유저의 추천 트랙 가져오기
         Queue<TrackRecommendationResponse> userRecommendations = userRecommendationsCache.computeIfAbsent(user.getId(), k -> new ConcurrentLinkedQueue<>());
@@ -53,6 +69,10 @@ public class RecommendationServiceWithoutLock {
             //비어있거나 5개 이하면 다시 spotifyClient 로 요청
             //TODO 이거 스레드 동시성 처리하면 트레이드 오프가 있는지
             if(userRecommendations.size() <= REFRESH_THRESHOLD) {
+                if (concurrentCount > 1) {
+                    log.warn("중복 API calls 호출 발생 유저 ID: {}, 동시 요청 카운트: {}",
+                            user.getId(), concurrentCount);
+                }
                 refreshRecommendations(user);
             }
 
@@ -80,21 +100,29 @@ public class RecommendationServiceWithoutLock {
         String seedTracks = getSeedTracks(user);
 
         //해당 장르와 해당 트랙 전달
-        RecommendationResponse recommendations = spotifyClient.getRecommendations(seedTracks, seedGenres, RECOMMENDATIONS_SIZE);
+        //RecommendationResponse recommendations = spotifyClient.getRecommendations(seedTracks, seedGenres, RECOMMENDATIONS_SIZE);
+
+        SpotifyClientMock.RecommendationResponse recommendations = spotifyClientMock.getRecommendations(seedTracks, seedGenres, RECOMMENDATIONS_SIZE);
 
         //추천 트랙 리스트 추가
         Queue<TrackRecommendationResponse> userRecommendations = userRecommendationsCache.computeIfAbsent(
                 user.getId(),k -> new ConcurrentLinkedQueue<>());
 
-        recommendations.getTracks()
+//        recommendations.getTracks()  TODO 테스트때문에 주석..
+//                .stream()
+//                .map(TrackRecommendationResponse::new)
+//                .forEach(userRecommendations::offer);
+
+                recommendations.getTrackResponses()
                 .stream()
                 .map(TrackRecommendationResponse::new)
                 .forEach(userRecommendations::offer);
+
     }
 
     private String getSeedGenres(User user){
 
-        String seedGenres = genreRepository.findRandomGenresByUser(user, PageRequest.of(0, SEED_MAX))
+        String seedGenres = genreRepository.findRandomGenresByUser(user.getId(), SEED_MAX)
                 .stream()
                 .map(Genre::getName)
                 .collect(Collectors.joining(","));

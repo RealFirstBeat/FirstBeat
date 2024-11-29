@@ -82,3 +82,5 @@ logging:
   level:
     org.hibernate.orm.jdbc.bind: TRACE
     com.my.firstbeat: DEBUG
+  file:
+    name: ./logs/application.log

@@ -13,7 +13,10 @@ public interface GenreRepository extends JpaRepository<Genre, Long> {
     @Query("SELECT g.id FROM Genre g WHERE g.name IN :names")
     Set<Long> findIdsByNames(@Param("names") Set<String> names);
 
-    @Query("select g from Genre g join UserGenre ug on ug.genre = g where ug.user = :user " +
-            "order by funcion('random')")
-    List<Genre> findRandomGenresByUser(@Param("user") User user, Pageable pageable);
+    @Query(value = "select g.* from genre g " +
+            "join user_genre ug on ug.genre_id = g.id " +
+            "where ug.user_id = ?1 " +
+            "order by RANDOM() limit ?2",
+            nativeQuery = true)
+    List<Genre> findRandomGenresByUser(Long userId, int limit);
 }
