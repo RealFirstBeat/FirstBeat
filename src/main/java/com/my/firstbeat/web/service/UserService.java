@@ -53,12 +53,13 @@ public class UserService {
         // 선택된 장르 이름 가져오기
         List<String> genreNames = signupRequestDto.getGenreNames();
 
+        List<Genre> genres = genreRepository.findByNameIn(genreNames);
 
-        List<Genre> genres = genreNames.stream()
-                .map(n -> genreRepository.findByName(n)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_GENRES)))
-                .toList();
+        if (genres.size() != genreNames.size()) {
+            throw new BusinessException(ErrorCode.INVALID_GENRES);
+        }
 
+        userRepository.save(user);
 
         // UserGenre 매핑 저장
         for (Genre genre : genres) {
@@ -69,7 +70,6 @@ public class UserService {
             userGenreRepository.save(userGenre);
         }
 
-        userRepository.save(user);
         return "회원가입이 정상적으로 처리되었습니다.";
     }
 

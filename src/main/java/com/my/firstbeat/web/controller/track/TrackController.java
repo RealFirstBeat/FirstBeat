@@ -56,6 +56,13 @@ public class TrackController {
         return ResponseEntity.ok(ApiResult.success(recommendationService.getRecommendations(userId)));
     }
 
+	@GetMapping("/v0/tracks/recommendation")
+	public ResponseEntity<ApiResult<TrackRecommendationResponse>> getRecommendationsV2butUsingLoginUser(
+			@AuthenticationPrincipal LoginUser loginUser
+	){
+		return ResponseEntity.ok(ApiResult.success(recommendationService.getRecommendations(loginUser.getUser().getId())));
+	}
+
     @GetMapping("/v3/tracks/recommendations")
     public ResponseEntity<ApiResult<TrackRecommendationResponse>> getRecommendationV3(
             @RequestParam(value = "userId") Long userId) {
@@ -70,7 +77,7 @@ public class TrackController {
 		@AuthenticationPrincipal LoginUser loginUser,
 		@Valid @RequestBody TrackRequestDto requestDto) {
 
-		String result = playlistSwipeService.likeTrack(loginUser.getUser(), requestDto.getSpotifyTrackId());
+		String result = playlistSwipeService.likeTrack(loginUser.getUser(), requestDto);
 		return ResponseEntity.ok(ApiResult.success(result));
 	}
 

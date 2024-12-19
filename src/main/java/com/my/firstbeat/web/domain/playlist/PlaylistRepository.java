@@ -24,7 +24,10 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
 	//특정 사용자의 디폴트 플레이리스트 조회
 	Optional<Playlist> findByUserIdAndIsDefault(Long userId, boolean isDefault);
 
+    @Query("select p from Playlist p where p.user.id = :userId and p.isDefault = true")
+    Optional<Playlist> findByUserDefaultPlaylist(@Param("userId") Long userId);
+
     Page<Playlist> findByUserId(Long userId, Pageable pageable);
 
-    Page<Playlist> findByTitleContaining(String query, Pageable pageable);
+    Page<Playlist> findByTitleContaining(String title, Pageable pageable);
 }

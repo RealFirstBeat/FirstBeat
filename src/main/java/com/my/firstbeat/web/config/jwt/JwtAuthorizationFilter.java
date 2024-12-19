@@ -34,7 +34,7 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
                 return;
             }
 
-            if(request.getRequestURI().contains("tracks")){
+            if(request.getRequestURI().contains("recommendations")){
                 log.info("추천 트랙 반환 경로라서 패스함~");
                 chain.doFilter(request, response);
                 return;

@@ -159,7 +159,7 @@ class RecommendationServiceUnitTest extends DummyObject {
             return sharedQueue; //이후 두 번째 접근에서는 데이터가 있는 sharedQueue 를 반환
         });
 
-        given(genreRepository.findRandomGenresByUser(eq(testUser), anyInt())).willReturn(genreList);
+        given(genreRepository.findRandomGenresByUser(eq(testUser.getId()), anyInt())).willReturn(genreList);
         given(playlistRepository.findRandomTrackByUser(eq(testUser), any(Pageable.class))).willReturn(trackList);
         given(trackRepository.existsInUserPlaylist(eq(testUser), anyString())).willReturn(false);
 

@@ -1,6 +1,7 @@
 package com.my.firstbeat.web.service;
 
 
+import com.my.firstbeat.web.controller.track.dto.request.TrackRequestDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.my.firstbeat.web.controller.track.dto.response.TrackRecommendationResponse;
@@ -27,22 +28,32 @@ public class PlaylistSwipeService {
 	private final PlaylistTrackRepository playlistTrackRepository;
 	private final RecommendationService recommendationService;
 
+
+
 	/**
 	 * 좋아요 (오른쪽 스와이프)
+
 	 */
 	@Transactional
-	public String likeTrack(User user, String spotifyTrackId) {
+	public String likeTrack(User user, TrackRequestDto trackRequestDto) {
 		Playlist defaultPlaylist = playlistService.getDefaultPlaylist(user.getId());
-		Track track = trackRepository.findBySpotifyTrackId(spotifyTrackId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
 
-		// 중복 체크
-		boolean trackExists = playlistTrackRepository.existsByPlaylistAndTrack(defaultPlaylist, track);
-		if (trackExists) {
-			throw new BusinessException(ErrorCode.DUPLICATE_PLAYLIST_TITLE);
-		}
+
+		Track track = trackRepository.findBySpotifyTrackId(trackRequestDto.getSpotifyTrackId())
+				.orElse(null);
 
 		// 곡 추가
+		if(track == null){
+			track = Track.builder()
+					.spotifyTrackId(trackRequestDto.getSpotifyTrackId())
+					.name(trackRequestDto.getName())
+					.artistName(trackRequestDto.getArtistName())
+					.previewUrl(trackRequestDto.getPreviewUrl())
+					.albumCoverUrl(trackRequestDto.getAlbumCoverUrl())
+					.build();
+			trackRepository.save(track);
+		}
+
 		PlaylistTrack playlistTrack = new PlaylistTrack(defaultPlaylist, track);
 		playlistTrackRepository.save(playlistTrack);
 
